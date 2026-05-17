@@ -1,41 +1,158 @@
-# Inventory
+# SISTEMA INFORMÁTICO DE CONTROL DE IMPRESIONES Y SUMINISTROS
 
-Este proyecto es una aplicación web, en la que puedes llevar la gestión de tus productos, ya sea la contabilidad de existencias así como moviemientos de entradas y salidas. También esta diseñado para que puedas ver un dashboard de los productos y sus movimientos.
-Esta aplicación fue realizada con [React](https://reactjs.org/) y [Firebase](https://firebase.google.com/)
+Backend REST desarrollado con Node.js, Express.js, PostgreSQL, Sequelize, JWT y bcrypt.
 
-## Preparando la aplicación
+## Funcionalidades incluidas
 
-Para ejecutar la aplicacion debes tener un proyecto de [Firebase](https://console.firebase.google.com/) para la autenticación y el guardado de información, tener instalado en tu equipo Node.js y NPM.
+- Autenticación con JWT, sesiones revocables, hash de contraseñas y control por roles.
+- CRUD de impresoras.
+- CRUD de suministros con entradas, salidas, alertas de stock bajo y búsqueda para autocompletado.
+- Gestión de mantenimientos.
+- Registros diarios de contador, papel y cambio de tóner.
+- Reportes básicos de consumo mensual, rendimiento de tóner y proyección de pedidos.
+- Validaciones con `express-validator`, manejo global de errores y respuestas JSON consistentes.
 
-Descarga el repositorio:
+## Estructura
 
-```bash
-git clone https://github.com/pablogallardodev/inventory.git
-cd inventory
+```text
+src/
+  config/
+  controllers/
+  middlewares/
+  models/
+  routes/
+  services/
+  utils/
+  validators/
+  database/
+    migrations/
+    seeders/
+  app.js
+  server.js
 ```
 
-Instala las dependencias:
+## Requisitos
+
+- Node.js 18 o superior
+- PostgreSQL 14 o superior
+
+## Instalación
 
 ```bash
 npm install
-```
-
-Crea un archivo `.env` a partir del archivo `.env.example`.
-
-```bash
 cp .env.example .env
-```
-
-### Variables .env
-
-Para que el proyecto funcione correctamente debe definir la variable de entorno VITE_FIREBASE_CONFIG en la cual hay que añadir la configuración de tu proyecto de firebase que puede encontrar en la [consola](https://console.firebase.google.com/) de su proyecto.
-
-## Ejecutando la aplicación
-
-Una vez completado lo mencionado anteriormente, puede ejecutar la aplicación con:
-
-```bash
+npm run db:migrate
+npm run db:seed
 npm run dev
 ```
 
-Para visualizar la aplicacion dirijase a [localhost:3000](http://localhost:3000).
+En PowerShell también puede usar:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+## Variables de entorno
+
+| Variable | Descripción |
+| --- | --- |
+| `NODE_ENV` | Entorno de ejecución |
+| `PORT` | Puerto HTTP |
+| `DB_HOST` | Host de PostgreSQL |
+| `DB_PORT` | Puerto de PostgreSQL |
+| `DB_NAME` | Base de datos |
+| `DB_USER` | Usuario de base de datos |
+| `DB_PASSWORD` | Contraseña de base de datos |
+| `JWT_SECRET` | Secreto para firmar tokens |
+| `JWT_EXPIRES_IN` | Duración del token |
+| `CORS_ORIGIN` | Origen permitido para React |
+
+## Usuario inicial
+
+```text
+usuario: admin
+contraseña: Admin123*
+rol: administrador
+```
+
+Cambie esta contraseña antes de usar el sistema en un entorno real.
+
+## Formato de respuesta
+
+```json
+{
+  "success": true,
+  "message": "",
+  "data": {}
+}
+```
+
+## Endpoints
+
+### Autenticación
+
+| Método | Ruta |
+| --- | --- |
+| `POST` | `/api/auth/login` |
+| `POST` | `/api/auth/logout` |
+| `GET` | `/api/auth/profile` |
+
+### Impresoras
+
+| Método | Ruta |
+| --- | --- |
+| `GET` | `/api/printers` |
+| `GET` | `/api/printers/:id` |
+| `POST` | `/api/printers` |
+| `PUT` | `/api/printers/:id` |
+| `DELETE` | `/api/printers/:id` |
+
+### Suministros
+
+| Método | Ruta |
+| --- | --- |
+| `GET` | `/api/supplies?q=texto` |
+| `GET` | `/api/supplies/:id` |
+| `POST` | `/api/supplies` |
+| `PUT` | `/api/supplies/:id` |
+| `DELETE` | `/api/supplies/:id` |
+| `POST` | `/api/supplies/:id/movements` |
+
+### Mantenimientos
+
+| Método | Ruta |
+| --- | --- |
+| `GET` | `/api/maintenance` |
+| `POST` | `/api/maintenance` |
+| `PUT` | `/api/maintenance/:id` |
+
+### Registros diarios
+
+| Método | Ruta |
+| --- | --- |
+| `POST` | `/api/daily-records` |
+| `GET` | `/api/daily-records` |
+
+### Reportes
+
+| Método | Ruta |
+| --- | --- |
+| `GET` | `/api/reports/monthly?year=2026&month=5` |
+| `GET` | `/api/reports/toner-performance` |
+| `GET` | `/api/reports/projections` |
+
+## Roles y permisos
+
+| Rol | Acceso principal |
+| --- | --- |
+| `administrador` | Acceso total |
+| `supervisor` | Gestión operativa y reportes |
+| `operario` | Registros diarios y movimientos de suministros |
+| `tecnico` | Mantenimientos |
+
+## Notas de diseño
+
+- El logout revoca la sesión persistida y el frontend también debe eliminar el JWT almacenado.
+- Los movimientos de suministro se ejecutan dentro de transacciones para impedir stock negativo.
+- Cada impresora solo admite un registro diario por fecha.
+- El backend queda preparado para integrarse con React mediante `CORS_ORIGIN`.

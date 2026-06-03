@@ -59,17 +59,17 @@ DCopy_Center/
 1. Crear la base de datos en PostgreSQL:
    ```sql
    CREATE DATABASE control_impresiones;
-   CREATE USER control_impresiones WITH PASSWORD 'copy';
+   CREATE USER control_impresiones WITH PASSWORD '1234';
    GRANT ALL PRIVILEGES ON DATABASE control_impresiones TO control_impresiones;
    ```
 
 2. La configuración de conexión está en `backend/db.js`:
    ```javascript
    {
-     user: 'control_impresiones',
+     user: '',postgres
      host: 'localhost',
      database: 'control_impresiones',
-     password: 'copy',
+     password: '1234',
      port: 5432
    }
    ```

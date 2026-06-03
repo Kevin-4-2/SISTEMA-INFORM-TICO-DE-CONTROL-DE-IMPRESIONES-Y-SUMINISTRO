@@ -1,158 +1,326 @@
-# SISTEMA INFORMÁTICO DE CONTROL DE IMPRESIONES Y SUMINISTROS
+# SISTEMA INFORMÁTICO DE CONTROL DE IMPRESIONES Y SUMINISTROS (SICIS)
 
-Backend REST desarrollado con Node.js, Express.js, PostgreSQL, Sequelize, JWT y bcrypt.
+Sistema integral para la gestión de suministros, mantenimientos y registros diarios de impresoras.
 
-## Funcionalidades incluidas
+## 📁 Estructura del Proyecto
 
-- Autenticación con JWT, sesiones revocables, hash de contraseñas y control por roles.
-- CRUD de impresoras.
-- CRUD de suministros con entradas, salidas, alertas de stock bajo y búsqueda para autocompletado.
-- Gestión de mantenimientos.
-- Registros diarios de contador, papel y cambio de tóner.
-- Reportes básicos de consumo mensual, rendimiento de tóner y proyección de pedidos.
-- Validaciones con `express-validator`, manejo global de errores y respuestas JSON consistentes.
-
-## Estructura
-
-```text
-src/
-  config/
-  controllers/
-  middlewares/
-  models/
-  routes/
-  services/
-  utils/
-  validators/
-  database/
-    migrations/
-    seeders/
-  app.js
-  server.js
+```
+DCopy_Center/
+├── backend/                 # Servidor Node.js con Express
+│   ├── db.js              # Configuración de conexión PostgreSQL
+│   ├── db-init.js         # Inicialización de base de datos
+│   ├── index.js           # Servidor principal y API endpoints
+│   ├── migrate.js         # Script de migración de base de datos
+│   ├── migrar-db.js       # Script de migración adicional
+│   ├── reset-database.js  # Script para limpiar base de datos
+│   ├── package.json       # Dependencias de Node.js
+│   └── node_modules/      # Dependencias instaladas
+│
+├── frontend/              # Aplicación web frontend
+│   ├── img/               # Imágenes y assets
+│   ├── index.html         # Página principal de la aplicación
+│   ├── login.html         # Página de inicio de sesión
+│   ├── login.css          # Estilos específicos de login
+│   ├── logout-button.css  # Estilos del botón de cierre de sesión
+│   ├── logout-button.js   # Lógica del botón de cierre de sesión
+│   ├── script.js          # Lógica principal de la aplicación
+│   └── styles.css         # Estilos globales de la aplicación
+│
+├── scripts/               # Scripts de automatización
+│   ├── README.md          # Documentación de scripts
+│   ├── start.bat          # Inicio completo del sistema
+│   ├── reset-database.bat # Limpia base de datos
+│   ├── seed-database.bat  # Carga datos de prueba
+│   └── primer_inicio.bat  # Primer inicio del sistema
+│
+├── schema.sql             # Esquema completo de la base de datos
+├── datos_prueba.sql       # Datos de prueba para desarrollo
+├── migrar_columnas.sql    # Migración de columnas
+├── recrear_tablas.sql     # Recreación de tablas
+│
+├── cargar_datos.bat       # Script para cargar datos (legacy)
+├── primer_inicio.bat      # Script de primer inicio (legacy)
+├── iniciar_todo.bat       # Script de inicio completo (legacy)
+│
+├── DOCUMENTACION_COMPLETA_SICIS.md  # Documentación completa del sistema
+└── README.md              # Este archivo
 ```
 
-## Requisitos
+## 🚀 Instalación y Configuración
 
-- Node.js 18 o superior
-- PostgreSQL 14 o superior
+### Requisitos Previos
 
-## Instalación
+- Node.js (v16 o superior)
+- PostgreSQL (v12 o superior)
+- Navegador web moderno (Chrome, Firefox, Edge)
+
+### Configuración de Base de Datos
+
+1. Crear la base de datos en PostgreSQL:
+   ```sql
+   CREATE DATABASE control_impresiones;
+   CREATE USER control_impresiones WITH PASSWORD 'copy';
+   GRANT ALL PRIVILEGES ON DATABASE control_impresiones TO control_impresiones;
+   ```
+
+2. La configuración de conexión está en `backend/db.js`:
+   ```javascript
+   {
+     user: 'control_impresiones',
+     host: 'localhost',
+     database: 'control_impresiones',
+     password: 'copy',
+     port: 5432
+   }
+   ```
+
+### Instalación de Dependencias
 
 ```bash
+cd backend
 npm install
-cp .env.example .env
-npm run db:migrate
-npm run db:seed
-npm run dev
 ```
 
-En PowerShell también puede usar:
+### Comandos npm disponibles (desde backend/)
 
-```powershell
-Copy-Item .env.example .env
+- `npm start` - Inicia el servidor backend
+- `npm run init-db` - Inicializa la base de datos (crea tablas)
+- `npm run migrate` - Ejecuta migraciones de columnas
+- `npm run seed` - Carga datos de prueba
+- `npm run reset` - Limpia la base de datos (mantiene usuarios de login)
+- `npm run stop` - Detiene el servidor backend
+- `npm run restart` - Reinicia el servidor backend
+
+## 🎯 Uso del Sistema
+
+### Primer Inicio
+
+1. Ejecutar `npm run init-db` desde `backend/` para crear las tablas
+2. Ejecutar `scripts\seed-database.bat` para cargar datos de prueba
+3. Ejecutar `scripts\start.bat` para iniciar el sistema
+
+Este flujo creará los siguientes usuarios de prueba:
+- `admin / admin123` (administrador)
+- `carlos / carlos123` (supervisor)
+- `maria / maria123` (operario)
+- `juan / juan123` (tecnico)
+- `laura / laura123` (operario)
+
+### Scripts de automatización (recomendados)
+
+#### start.bat
+Inicia el sistema SICIS. Detiene cualquier instancia previa del backend y abre el navegador en la página de login.
+
+```bash
+scripts\start.bat
 ```
 
-## Variables de entorno
+#### reset-database.bat
+Elimina todos los datos de la base de datos manteniendo solo los usuarios de login (admin, carlos, maria, juan, laura). Útil para limpiar la base de datos sin perder acceso al sistema.
 
-| Variable | Descripción |
-| --- | --- |
-| `NODE_ENV` | Entorno de ejecución |
-| `PORT` | Puerto HTTP |
-| `DB_HOST` | Host de PostgreSQL |
-| `DB_PORT` | Puerto de PostgreSQL |
-| `DB_NAME` | Base de datos |
-| `DB_USER` | Usuario de base de datos |
-| `DB_PASSWORD` | Contraseña de base de datos |
-| `JWT_SECRET` | Secreto para firmar tokens |
-| `JWT_EXPIRES_IN` | Duración del token |
-| `CORS_ORIGIN` | Origen permitido para React |
-
-## Usuario inicial
-
-```text
-usuario: admin
-contraseña: Admin123*
-rol: administrador
+```bash
+scripts\reset-database.bat
 ```
 
-Cambie esta contraseña antes de usar el sistema en un entorno real.
+#### seed-database.bat
+Carga datos de prueba en la base de datos. Ejecuta las migraciones necesarias y luego carga los datos de prueba (impresoras, suministros, alertas, etc.).
 
-## Formato de respuesta
-
-```json
-{
-  "success": true,
-  "message": "",
-  "data": {}
-}
+```bash
+scripts\seed-database.bat
 ```
 
-## Endpoints
+### Scripts legacy (aún disponibles)
 
-### Autenticación
+- `primer_inicio.bat` - Primer inicio del sistema (versión anterior)
+- `iniciar_todo.bat` - Inicio completo del sistema (versión anterior)
+- `cargar_datos.bat` - Script para cargar datos (versión anterior)
 
-| Método | Ruta |
-| --- | --- |
-| `POST` | `/api/auth/login` |
-| `POST` | `/api/auth/logout` |
-| `GET` | `/api/auth/profile` |
+### Para limpiar y recargar datos
+
+1. Ejecutar `scripts\reset-database.bat` para limpiar datos
+2. Ejecutar `scripts\seed-database.bat` para recargar datos de prueba
+3. Ejecutar `scripts\start.bat` para iniciar el sistema
+
+## 👥 Roles y Permisos
+
+El sistema tiene 4 roles con diferentes niveles de acceso:
+
+| Rol | Dashboard | Impresoras | Suministros | Mantenimientos | Registros | Reportes | Configuración |
+|-----|-----------|------------|-------------|----------------|-----------|----------|---------------|
+| Administrador | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Supervisor | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Operario | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ |
+| Técnico | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
+
+## 📊 Módulos del Sistema
+
+### Dashboard
+- Vista general del estado del sistema
+- Estadísticas de impresoras activas, suministros bajos, mantenimientos pendientes
+- Alertas de stock crítico
+- Gráficos de consumo por impresora
 
 ### Impresoras
-
-| Método | Ruta |
-| --- | --- |
-| `GET` | `/api/printers` |
-| `GET` | `/api/printers/:id` |
-| `POST` | `/api/printers` |
-| `PUT` | `/api/printers/:id` |
-| `DELETE` | `/api/printers/:id` |
+- Gestión de impresoras (crear, editar, eliminar)
+- Seguimiento de contador de impresiones
+- Estados: activa, inactiva, mantenimiento
 
 ### Suministros
-
-| Método | Ruta |
-| --- | --- |
-| `GET` | `/api/supplies?q=texto` |
-| `GET` | `/api/supplies/:id` |
-| `POST` | `/api/supplies` |
-| `PUT` | `/api/supplies/:id` |
-| `DELETE` | `/api/supplies/:id` |
-| `POST` | `/api/supplies/:id/movements` |
+- Control de inventario de suministros (tóner, papel, tinta)
+- Registro de movimientos de entrada/salida
+- Alertas de stock bajo
+- Gestión de proveedores
 
 ### Mantenimientos
+- Registro de mantenimientos preventivos y correctivos
+- Seguimiento de estados: pendiente, en proceso, finalizado
+- Asignación de técnicos
 
-| Método | Ruta |
-| --- | --- |
-| `GET` | `/api/maintenance` |
-| `POST` | `/api/maintenance` |
-| `PUT` | `/api/maintenance/:id` |
-
-### Registros diarios
-
-| Método | Ruta |
-| --- | --- |
-| `POST` | `/api/daily-records` |
-| `GET` | `/api/daily-records` |
+### Registros Diarios
+- Registro de uso diario de impresoras
+- Contador de impresiones
+- Recargas de papel
+- Cambios de tóner
 
 ### Reportes
+- Reportes de consumo mensual
+- Estadísticas de cambios de tóner
+- Proyección de stock y pedidos sugeridos
 
-| Método | Ruta |
-| --- | --- |
-| `GET` | `/api/reports/monthly?year=2026&month=5` |
-| `GET` | `/api/reports/toner-performance` |
-| `GET` | `/api/reports/projections` |
+### Configuración
+- Gestión de usuarios
+- Asignación de roles
+- Activación/desactivación de cuentas
 
-## Roles y permisos
+## 🎨 Características de Interfaz
 
-| Rol | Acceso principal |
-| --- | --- |
-| `administrador` | Acceso total |
-| `supervisor` | Gestión operativa y reportes |
-| `operario` | Registros diarios y movimientos de suministros |
-| `tecnico` | Mantenimientos |
+- **Modo oscuro/claro**: Toggle para cambiar entre temas
+- **Diseño responsive**: Adaptado para diferentes tamaños de pantalla
+- **Badges de estado**: Indicadores visuales de estado de stock y mantenimientos
+- **Paginación**: Tablas con paginación para mejor manejo de datos
+- **Filtros de búsqueda**: Búsqueda en tiempo real en todas las tablas
+- **Modales**: Formularios en ventanas modales para mejor UX
 
-## Notas de diseño
+## 🗄️ Esquema de Base de Datos
 
-- El logout revoca la sesión persistida y el frontend también debe eliminar el JWT almacenado.
-- Los movimientos de suministro se ejecutan dentro de transacciones para impedir stock negativo.
-- Cada impresora solo admite un registro diario por fecha.
-- El backend queda preparado para integrarse con React mediante `CORS_ORIGIN`.
+El esquema completo de la base de datos se encuentra en `schema.sql` (raíz del proyecto).
+
+Tablas principales:
+- `usuarios`: Usuarios del sistema
+- `impresoras`: Impresoras registradas
+- `suministros`: Inventario de suministros
+- `movimientos_suministros`: Historial de movimientos
+- `mantenimientos`: Registro de mantenimientos
+- `registros_diarios`: Registros de uso diario
+
+## 🔧 Scripts de Base de Datos
+
+### schema.sql
+Esquema completo con todas las tablas y relaciones. Ejecutar para crear la base de datos desde cero.
+
+### datos_prueba.sql
+Datos de prueba para desarrollo (impresoras, suministros, usuarios, etc.).
+
+### migrar_columnas.sql
+Script de migración para actualizar columnas existentes sin perder datos. Incluye:
+- Renombrar `password` a `contrasena`
+- Agregar columnas de proveedor
+- Actualizar constraints
+
+### recrear_tablas.sql
+Script para recrear las tablas (útil en desarrollo).
+
+### Scripts de migración en backend/
+- `backend/migrate.js` - Script de migración principal
+- `backend/reset-database.js` - Limpia la base de datos manteniendo usuarios
+
+## 📝 Scripts de Automatización
+
+### Scripts recomendados (en scripts/)
+
+#### start.bat
+- Detiene el backend previo
+- Inicializa tablas si es necesario
+- Inicia el servidor backend
+- Abre el navegador en la página de login
+
+#### reset-database.bat
+- Conecta a la base de datos
+- Elimina todos los datos excepto usuarios de login
+- Mantiene el sistema accesible
+
+#### seed-database.bat
+- Ejecuta migraciones necesarias
+- Carga datos de prueba completos
+- Genera alertas y registros de ejemplo
+
+#### primer_inicio.bat
+- Script de primer inicio completo
+- Combina inicialización y carga de datos
+
+### Scripts legacy (raíz del proyecto)
+
+#### cargar_datos.bat
+- Script para cargar datos de prueba (versión anterior)
+
+#### primer_inicio.bat
+- Primer inicio del sistema (versión anterior)
+- Detiene backend, crea tablas, carga datos
+
+#### iniciar_todo.bat
+- Inicio completo del sistema (versión anterior)
+- Detiene backend previo, inicializa tablas, inicia servidor
+
+
+
+## 🛠️ Tecnologías Utilizadas
+
+- **Backend**: Node.js, Express.js
+- **Frontend**: HTML5, CSS3, JavaScript (Vanilla)
+- **Base de Datos**: PostgreSQL
+- **Gráficos**: Chart.js
+- **Sesiones**: express-session
+
+## 📄 Documentación Adicional
+
+- `docs/DOCUMENTACION_COMPLETA_SICIS.md`: Documentación técnica completa del sistema
+- `docs/SISTEMA_PROTECCION_VENTAS.md`: Documentación del sistema de protección de ventas
+
+## 🔒 Seguridad
+
+- Autenticación basada en sesiones
+- Control de acceso por roles
+- Validación de datos en backend
+- Protección contra SQL injection (usando parámetros)
+- CORS configurado
+
+## 🐛 Solución de Problemas
+
+### El backend no inicia
+- Verificar que PostgreSQL esté corriendo
+- Verificar las credenciales en `backend/db.js`
+- Revisar que el puerto 3001 esté disponible
+
+### Error de conexión a base de datos
+- Verificar que el servicio PostgreSQL esté iniciado
+- Confirmar que la base de datos control_impresiones exista
+- Revisar credenciales en `backend/db.js`
+
+### Las alertas no se muestran
+- Verificar que haya suministros con stock bajo
+- Revisar la configuración de stock mínimo
+
+## 📞 Soporte
+
+Para problemas o consultas, revisar la documentación en la carpeta `docs/`.
+
+## 📝 Notas de Entrega
+
+Este proyecto ha sido reorganizado siguiendo mejores prácticas:
+- Estructura de carpetas clara y organizada
+- Separación de concerns (frontend, backend, database, scripts, docs)
+- Eliminación de archivos innecesarios (backups, archivos temporales)
+- Actualización de rutas en scripts de automatización
+- Documentación completa del proyecto
+
+El sistema está listo para ser entregado y desplegado en producción.

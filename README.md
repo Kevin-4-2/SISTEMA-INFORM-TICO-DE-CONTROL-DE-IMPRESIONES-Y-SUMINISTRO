@@ -33,16 +33,6 @@ DCopy_Center/
 │   ├── seed-database.bat  # Carga datos de prueba
 │   └── primer_inicio.bat  # Primer inicio del sistema
 │
-├── schema.sql             # Esquema completo de la base de datos
-├── datos_prueba.sql       # Datos de prueba para desarrollo
-├── migrar_columnas.sql    # Migración de columnas
-├── recrear_tablas.sql     # Recreación de tablas
-│
-├── cargar_datos.bat       # Script para cargar datos (legacy)
-├── primer_inicio.bat      # Script de primer inicio (legacy)
-├── iniciar_todo.bat       # Script de inicio completo (legacy)
-│
-├── DOCUMENTACION_COMPLETA_SICIS.md  # Documentación completa del sistema
 └── README.md              # Este archivo
 ```
 

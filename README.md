@@ -129,11 +129,6 @@ Carga datos de prueba en la base de datos. Ejecuta las migraciones necesarias y 
 scripts\seed-database.bat
 ```
 
-### Scripts legacy (aún disponibles)
-
-- `primer_inicio.bat` - Primer inicio del sistema (versión anterior)
-- `iniciar_todo.bat` - Inicio completo del sistema (versión anterior)
-- `cargar_datos.bat` - Script para cargar datos (versión anterior)
 
 ### Para limpiar y recargar datos
 
@@ -258,21 +253,6 @@ Script para recrear las tablas (útil en desarrollo).
 - Script de primer inicio completo
 - Combina inicialización y carga de datos
 
-### Scripts legacy (raíz del proyecto)
-
-#### cargar_datos.bat
-- Script para cargar datos de prueba (versión anterior)
-
-#### primer_inicio.bat
-- Primer inicio del sistema (versión anterior)
-- Detiene backend, crea tablas, carga datos
-
-#### iniciar_todo.bat
-- Inicio completo del sistema (versión anterior)
-- Detiene backend previo, inicializa tablas, inicia servidor
-
-
-
 ## 🛠️ Tecnologías Utilizadas
 
 - **Backend**: Node.js, Express.js
@@ -280,11 +260,6 @@ Script para recrear las tablas (útil en desarrollo).
 - **Base de Datos**: PostgreSQL
 - **Gráficos**: Chart.js
 - **Sesiones**: express-session
-
-## 📄 Documentación Adicional
-
-- `docs/DOCUMENTACION_COMPLETA_SICIS.md`: Documentación técnica completa del sistema
-- `docs/SISTEMA_PROTECCION_VENTAS.md`: Documentación del sistema de protección de ventas
 
 ## 🔒 Seguridad
 
@@ -310,17 +285,5 @@ Script para recrear las tablas (útil en desarrollo).
 - Verificar que haya suministros con stock bajo
 - Revisar la configuración de stock mínimo
 
-## 📞 Soporte
-
-Para problemas o consultas, revisar la documentación en la carpeta `docs/`.
-
-## 📝 Notas de Entrega
-
-Este proyecto ha sido reorganizado siguiendo mejores prácticas:
-- Estructura de carpetas clara y organizada
-- Separación de concerns (frontend, backend, database, scripts, docs)
-- Eliminación de archivos innecesarios (backups, archivos temporales)
-- Actualización de rutas en scripts de automatización
-- Documentación completa del proyecto
 
 El sistema está listo para ser entregado y desplegado en producción.

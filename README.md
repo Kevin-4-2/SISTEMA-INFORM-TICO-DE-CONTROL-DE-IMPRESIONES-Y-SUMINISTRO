@@ -277,3 +277,4 @@ Script para recrear las tablas (útil en desarrollo).
 
 
 El sistema está listo para ser entregado y desplegado en producción.
+Editando... 

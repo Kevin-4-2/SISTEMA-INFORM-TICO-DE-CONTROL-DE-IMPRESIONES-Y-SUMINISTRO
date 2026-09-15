@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: sicis-demo
+    name: sicis
     runtime: docker
     plan: free
     region: oregon

@@ -4,5 +4,3 @@
 backend/.env
 .env
 *.log
-cinematic-prototype*
-frontend-cinematic

@@ -3,3 +3,5 @@
 backend/.env
 .env
 *.log
+.freebuff/
+.playwright-mcp/

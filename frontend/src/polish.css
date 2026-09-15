@@ -18,7 +18,7 @@ body, button, input { font-family: "Manrope", ui-sans-serif, system-ui, sans-ser
 .login-title { font-weight: 600; letter-spacing: -3.6px; }
 .hero-content h1, .station-intro h1 { font-weight: 620; }
 .room-header h2 { font-weight: 650; }
-.prototype-label,
+.system-kicker,
 .overline,
 .panel-index,
 .hero-content > p,
@@ -126,40 +126,6 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 .add-button:hover:before { opacity: 1; }
 
-/* Navegación orbital */
-.station-button {
-  width: 51px;
-  height: 51px;
-  transition: transform .42s var(--button-ease), color .3s;
-}
-.station-button:after {
-  content: "";
-  position: absolute;
-  inset: -5px;
-  border: 1px solid rgba(37,156,216,.22);
-  border-radius: 18px;
-  opacity: 0;
-  transform: rotate(18deg) scale(.72);
-  transition: opacity .35s, transform .55s var(--button-ease);
-}
-.station-button:hover:after {
-  opacity: 1;
-  transform: rotate(0deg) scale(1);
-}
-.station-button:hover {
-  transform: translateZ(20px) rotateY(-8deg);
-}
-.station-button.active:after {
-  opacity: .72;
-  border-color: rgba(37,172,232,.37);
-  animation: nav-orbit 3.4s linear infinite;
-}
-.station-button.active .active-marker {
-  box-shadow: 0 15px 30px rgba(15,126,199,.31), inset 0 1px rgba(255,255,255,.38), 0 0 0 7px rgba(37,169,229,.07);
-}
-.station-button.active i {
-  animation: icon-land .62s var(--button-ease);
-}
 .station-button b {
   font-family: "Manrope", sans-serif;
   font-weight: 700;
@@ -270,6 +236,7 @@ button { -webkit-tap-highlight-color: transparent; }
 .logout-button:hover .logout-arrow { transform: translateX(-4px); }
 .logout-button > b {
   position: absolute;
+  z-index: 20;
   left: 51px;
   padding: 7px 10px;
   border-radius: 8px;
@@ -311,7 +278,7 @@ button { -webkit-tap-highlight-color: transparent; }
 /* La sesión se cierra como una secuencia, no con un corte */
 .logout-curtain {
   position: fixed;
-  z-index: 75;
+  z-index: 1200;
   inset: 0;
   pointer-events: none;
   opacity: 0;
@@ -337,8 +304,6 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 
 @keyframes button-orbit { to { --button-angle: 360deg; } }
-@keyframes nav-orbit { to { transform: rotate(360deg) scale(1); } }
-@keyframes icon-land { 0% { transform: translateZ(0) scale(.6) rotate(-35deg); } 60% { transform: translateZ(28px) scale(1.22) rotate(5deg); } 100% { transform: translateZ(0) scale(1) rotate(0); } }
 @keyframes search-pulse { 50% { transform: scale(1.25) rotate(-12deg); color: #149ee6; } }
 @keyframes live-pulse { 60% { box-shadow: 0 0 0 7px rgba(102,209,132,0); } }
 @keyframes button-ripple { to { opacity: 0; transform: translate(-50%,-50%) scale(16); } }
@@ -352,8 +317,11 @@ button { -webkit-tap-highlight-color: transparent; }
 @media (max-width: 760px) {
   .logout-top-button { display: grid; }
 }
+.command-palette [data-command-go][hidden] { display: none !important; }
+.control-nav { overflow: visible; }
+.control-nav nav { overflow: visible; }
+.control-nav nav .station-button[hidden] { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
-  .station-button.active:after,
   .live-button i,
   .add-button:before { animation: none !important; }
 }

@@ -226,10 +226,56 @@
 }
 .station .filtro-alerta.active, .station .tab-btn.active { border-color: #189ee2; background: linear-gradient(135deg,#24aeea,#0b72c5); color: #fff; box-shadow: 0 7px 16px rgba(18,121,197,.18); }
 .station .lista-alertas { display: grid; gap: 8px; }
+.station .chart-stage { position: relative; height: 300px; min-height: 255px; max-height: 350px; }
+.station .chart-stage canvas { height: 100% !important; max-height: 350px; }
+.station .chart-note { margin: 0 0 8px; color: #608197; font-size: 11px; font-weight: 600; }
+.station .chart-note[hidden] { display: none; }
+.station .chart-empty-state { position: absolute; inset: 38px 0 0; display: grid; place-items: center; align-content: center; justify-items: center; gap: 8px; padding: 16px; text-align: center; color: #6f92a5; font-size: 12px; font-weight: 600; pointer-events: none; }
+.station .chart-empty-state .chart-empty-cta { pointer-events: auto; min-height: 32px; padding: 0 14px; border: 1px solid rgba(24, 158, 226, 0.45); border-radius: 10px; background: rgba(255, 255, 255, 0.8); color: #0b72c5; font-size: 11px; font-weight: 700; cursor: pointer; }
+.station .chart-empty-state .chart-empty-cta:hover { background: #fff; }
+.station .chart-empty-state .chart-empty-cta[hidden] { display: none; }
+.station .dashboard-panel-large:not(.chart-empty) .chart-empty-state { display: none; }
+.station .dashboard-panel-large.chart-empty .chart-stage canvas { visibility: hidden; }
 .station .sin-alertas { display: grid; min-height: 175px; place-items: center; align-content: center; gap: 12px; color: #76a1b6; font-size: 12px; }
 .station .sin-alertas svg { color: #22ab93; }
 .station .reportes-tabs { margin: 0 0 15px; }
 .station .tab-reporte:not(.active) { display: none; }
+
+/* Controls are grouped so their selected state has a clear visual context. */
+.station .alertas-filtros,
+.station .reportes-tabs {
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px;
+  border: 1px solid rgba(118,184,214,.25);
+  border-radius: 14px;
+  background: rgba(225,243,251,.58);
+  box-shadow: inset 0 1px rgba(255,255,255,.72);
+}
+.station .filtro-alerta,
+.station .tab-btn {
+  border-color: transparent;
+  box-shadow: none;
+  transition: transform .18s var(--ease), color .18s ease, background-color .18s ease, box-shadow .18s ease;
+}
+.station .filtro-alerta:hover,
+.station .tab-btn:hover { transform: translateY(-1px); background: rgba(255,255,255,.74); color: #166f9e; }
+.station .filtro-alerta.active,
+.station .tab-btn.active { box-shadow: 0 6px 14px rgba(18,121,197,.2); }
+.station .filtro-alerta:focus-visible,
+.station .tab-btn:focus-visible,
+.station .btn-principal:focus-visible,
+.station .btn-secundario:focus-visible,
+.station .btn-danger:focus-visible,
+.modal-overlay button:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 4px rgba(24,158,226,.17), 0 8px 18px rgba(30,97,133,.12);
+}
+.station .dashboard-cards > [hidden] { display: none !important; }
+html[data-sicis-role="tecnico"] .station[data-station="dashboard"] .dashboard-cards {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 920px;
+}
 
 /* Functional modal redesigned as a contained application dialog. */
 #experience .modal-overlay {
@@ -249,7 +295,7 @@
   width: min(660px, 100%);
   height: auto;
   max-height: min(760px, calc(100vh - 48px));
-  overflow: auto;
+  overflow: hidden;
   border: 1px solid rgba(153,211,239,.5);
   border-radius: 23px;
   background: linear-gradient(145deg, rgba(252,254,255,.98), rgba(228,245,253,.96));
@@ -277,4 +323,73 @@
   .station .toolbar { align-items: stretch; }
   .station .toolbar > * { flex: 1 1 100%; }
   #experience .modal-overlay { padding: 12px; }
+}
+
+/* Ag7: blindaje modal un solo scroll, acciones visibles y campos coherentes. */
+#experience .modal-overlay { overflow: hidden; }
+#experience .modal-overlay .modal { display: flex; flex-direction: column; }
+#experience .modal-overlay .modal-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(250, 253, 255, .96);
+}
+#experience .modal-overlay .modal-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+#experience .modal-overlay .modal-content .modal-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: linear-gradient(180deg, rgba(238, 248, 253, .55), rgba(244, 251, 254, .98) 30%);
+  border-top: 1px solid rgba(109, 178, 210, .2);
+}
+#experience .modal-overlay > .modal > .modal-actions { flex: 0 0 auto; }
+#experience .modal-overlay .modal-close:focus-visible {
+  outline: 2px solid var(--ui-blue);
+  outline-offset: 2px;
+}
+#experience .modal-overlay .form-card-group input[type="checkbox"] {
+  width: 18px !important;
+  height: 18px !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  flex: 0 0 auto;
+  accent-color: var(--ui-blue-deep);
+}
+#experience .modal-overlay input:user-invalid,
+#experience .modal-overlay select:user-invalid,
+#experience .modal-overlay textarea:user-invalid,
+#experience .modal-overlay input[aria-invalid="true"],
+#experience .modal-overlay select[aria-invalid="true"],
+#experience .modal-overlay textarea[aria-invalid="true"] {
+  border-color: #c93a54;
+  box-shadow: 0 0 0 4px rgba(201, 58, 84, .12);
+}
+#experience .modal-overlay .detalle-dl {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 9px 16px;
+  margin: 0;
+}
+#experience .modal-overlay .detalle-dl dt {
+  color: #52758c;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+#experience .modal-overlay .detalle-dl dd {
+  margin: 0;
+  color: var(--ui-ink);
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 560px) {
+  #experience .modal-overlay .detalle-dl { grid-template-columns: 1fr; gap: 2px 0; }
+  #experience .modal-overlay .detalle-dl dd { margin-bottom: 10px; }
 }

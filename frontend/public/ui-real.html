@@ -1,14 +1,14 @@
 <div class="experience" id="experience">
   <section class="login-scene" id="login-scene">
-    <header class="cinema-header">
+    <header class="site-header">
       <a class="brand" href="#" aria-label="SICIS"><span class="brand-symbol"><i></i></span><span>SICIS</span></a>
-      <span class="prototype-label">CENTRO DE CONTROL · OPERACIÓN INSTITUCIONAL</span>
+      <span class="system-kicker">CENTRO DE CONTROL · OPERACIÓN INSTITUCIONAL</span>
     </header>
 
     <div class="login-grid">
       <div class="login-copy">
         <p class="overline">SISTEMA EN LÍNEA <i></i></p>
-        <h1 class="login-title">La información<br />también puede<br /><em>tener profundidad.</em></h1>
+        <h1 class="login-title">Gestión institucional<br />de impresión<br /><em>y suministros.</em></h1>
         <p class="login-lead">Gestiona impresoras, suministros, mantenimientos y reportes desde una experiencia conectada a SICIS.</p>
         <div class="system-status">
           <span><b>01</b> Datos protegidos</span>
@@ -17,7 +17,7 @@
         </div>
       </div>
 
-      <form class="login-panel" id="cinema-login" autocomplete="on" novalidate>
+      <form class="login-panel" id="sicis-login" autocomplete="on" novalidate>
         <div class="panel-index">ACCESO / SICIS</div>
         <h2>Bienvenido de nuevo</h2>
         <p>Ingresa con tu cuenta institucional.</p>
@@ -28,7 +28,7 @@
           <span class="field"><i>◌</i><input id="password" name="password" type="password" autocomplete="current-password" required /></span>
         </label>
         <div class="login-options"><label><input id="recordarme" type="checkbox" /> Recordarme</label><span>Sesión protegida</span></div>
-        <button class="launch-button" type="submit"><span>Entrar a Control Room</span><i>↗</i><b></b></button>
+        <button class="launch-button" type="submit"><span>Entrar al sistema</span><i>↗</i><b></b></button>
         <small id="login-feedback" role="status" aria-live="polite">Usa tus credenciales de SICIS</small>
       </form>
 
@@ -36,14 +36,14 @@
       <div class="scene-callout callout-two"><i></i><span>BASE DE DATOS<br /><b>CONECTADA</b></span></div>
     </div>
 
-    <footer class="cinema-footer"><span>© 2026 SICIS</span><span class="scroll-hint"><i></i> Mueve el cursor para explorar la profundidad</span><span>ACCESO SEGURO</span></footer>
+    <footer class="site-footer"><span>© 2026 SICIS</span><span class="scroll-hint"><i></i> Acceso institucional seguro</span><span>ACCESO SEGURO</span></footer>
   </section>
 
   <section class="control-room" id="control-room" aria-hidden="true">
     <aside class="control-nav">
       <div class="brand compact"><span class="brand-symbol"><i></i></span></div>
       <nav aria-label="Módulos SICIS">
-        <button class="station-button active" data-station-target="dashboard" data-seccion="dashboard" aria-label="Dashboard"><span class="active-marker"></span><i>⌂</i><b>Resumen</b></button>
+        <button class="station-button active" data-station-target="dashboard" data-seccion="dashboard" aria-label="Dashboard"><i>⌂</i><b>Resumen</b></button>
         <button class="station-button" data-station-target="impresoras" data-seccion="impresoras" aria-label="Impresoras"><i>▦</i><b>Impresoras</b></button>
         <button class="station-button" data-station-target="suministros" data-seccion="suministros" aria-label="Suministros"><i>◇</i><b>Suministros</b></button>
         <button class="station-button" data-station-target="mantenimientos" data-seccion="mantenimientos" aria-label="Mantenimientos"><i>⌁</i><b>Mantenimiento</b></button>
@@ -73,11 +73,12 @@
 
   <div class="detail-layer" id="detail-layer" aria-hidden="true"><div class="detail-backdrop"></div><div class="detail-slot" id="detail-slot"></div></div>
   <div class="command-palette" id="command-palette" aria-hidden="true"><div><header><i>⌕</i><input placeholder="Busca un módulo de SICIS" /><button type="button">ESC</button></header><section>
-    <button data-command-go="impresoras"><span>▦</span> Abrir impresoras <b>↗</b></button>
-    <button data-command-go="suministros"><span>◇</span> Revisar suministros <b>↗</b></button>
-    <button data-command-go="mantenimientos"><span>⌁</span> Ver mantenimientos <b>↗</b></button>
-    <button data-command-go="reportes"><span>◌</span> Consultar reportes <b>↗</b></button>
-    <button data-command-go="configuracion"><span>♙</span> Gestionar perfiles <b>↗</b></button>
+    <button type="button" data-command-go="impresoras"><span>▦</span> Abrir impresoras <b>↗</b></button>
+    <button type="button" data-command-go="suministros"><span>◇</span> Revisar suministros <b>↗</b></button>
+    <button type="button" data-command-go="mantenimientos"><span>⌁</span> Ver mantenimientos <b>↗</b></button>
+    <button type="button" data-command-go="reportes"><span>◌</span> Consultar reportes <b>↗</b></button>
+    <button type="button" data-command-go="configuracion"><span>♙</span> Gestionar perfiles <b>↗</b></button>
+    <div id="palette-empty" hidden role="status" style="padding:11px;color:#55778b;font-size:10px;text-align:center;">No se encontró ningún módulo</div>
   </section></div></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <div id="mensaje-sistema" class="mensaje-sistema" aria-live="polite"></div>

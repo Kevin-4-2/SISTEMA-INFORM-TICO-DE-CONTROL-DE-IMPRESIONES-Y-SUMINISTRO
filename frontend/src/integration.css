@@ -177,7 +177,7 @@
   background: rgba(3, 17, 28, .64);
   backdrop-filter: blur(14px);
 }
-.modal-overlay.modal-open { display: block; }
+.modal-overlay.modal-open { display: flex; align-items: center; justify-content: center; }
 .modal {
   border: 1px solid rgba(150, 210, 239, .42);
   border-radius: 25px;

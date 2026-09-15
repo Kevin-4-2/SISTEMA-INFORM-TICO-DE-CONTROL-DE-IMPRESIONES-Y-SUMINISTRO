@@ -280,12 +280,19 @@ app.get('/dashboard/resumen', requireAuth, requireRoles('administrador', 'superv
     const consumoPorImpresora = await client.query(`
         SELECT i.nombre AS impresora,
                COALESCE(SUM(r.recarga_papel), 0)::int AS papel,
-               COALESCE(SUM(r.contador_diario), 0)::int AS contador
+               COALESCE(SUM(r.contador_diario), 0)::int AS contador_mes,
+               COALESCE(i.contador_actual, 0)::int AS contador_actual,
+               CASE WHEN COUNT(r.id) > 0
+                 THEN COALESCE(SUM(r.contador_diario), 0)::int
+                 ELSE COALESCE(i.contador_actual, 0)::int
+               END AS contador,
+               COUNT(r.id)::int AS registros,
+               (COUNT(r.id) = 0 AND COALESCE(i.contador_actual, 0) > 0) AS es_estimado
         FROM impresoras i
         LEFT JOIN registros_diarios r ON r.impresora_id = i.id
           AND EXTRACT(YEAR FROM r.fecha) = EXTRACT(YEAR FROM CURRENT_DATE)
           AND EXTRACT(MONTH FROM r.fecha) = EXTRACT(MONTH FROM CURRENT_DATE)
-        GROUP BY i.id, i.nombre
+        GROUP BY i.id, i.nombre, i.contador_actual
         ORDER BY i.nombre
       `);
     const impresorasInactivas = await client.query("SELECT COUNT(*)::int AS total FROM impresoras WHERE estado = 'inactiva'");

@@ -29,10 +29,34 @@
 .station-button {
   width: 54px;
   height: 54px;
+  appearance: none;
+  border: 1px solid transparent;
   border-radius: 17px;
   color: #6f91a8;
+  transform-style: flat;
+  will-change: transform;
   transition: color 180ms ease, background-color 180ms ease,
     border-color 180ms ease, box-shadow 220ms ease, transform 180ms ease;
+}
+
+.control-nav nav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  align-content: flex-start;
+  gap: 10px;
+  margin-top: 42px;
+  overflow: visible !important;
+  perspective: none;
+}
+
+.station-button[hidden] {
+  display: none !important;
+}
+
+.station-button:focus-visible > b {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .station-button::before,
@@ -59,22 +83,71 @@
   transform: translateY(-2px) scale(1.025);
 }
 
-.station-button > i:not(.active-marker) {
+.station-button:active {
+  transform: translateY(0) scale(.96);
+  transition-duration: 90ms;
+}
+
+.station-button:focus,
+.station-button:focus-visible {
+  outline: none !important;
+  border-color: rgba(255, 255, 255, .52) !important;
+  box-shadow: 0 12px 24px rgba(4, 112, 186, .24),
+    inset 0 1px 0 rgba(255, 255, 255, .38) !important;
+}
+
+.station-button > i {
   display: grid;
-  width: 23px;
-  height: 23px;
+  width: 24px;
+  height: 24px;
   place-items: center;
   font-style: normal;
+  color: inherit;
+  transform: none !important;
+  animation: none !important;
+  transition: color 180ms ease;
+}
+
+.station-button:hover > i,
+.station-button.active > i {
+  color: inherit;
+  transform: none !important;
+  animation: none !important;
 }
 
 .station-button svg {
   width: 22px;
   height: 22px;
   overflow: visible;
+  stroke-width: 1.7;
+  transition: filter 220ms ease, stroke-width 180ms ease;
 }
 
-.active-marker {
-  display: none !important;
+.station-button:hover svg {
+  stroke-width: 1.9;
+  filter: drop-shadow(0 0 6px rgba(23, 145, 216, .45));
+}
+
+.station-button.active svg {
+  stroke-width: 1.9;
+  filter: drop-shadow(0 1px 2px rgba(6, 71, 121, .35));
+}
+
+@media (max-height: 820px) and (min-width: 761px) {
+  .control-nav nav {
+    gap: 8px;
+    margin-top: 30px;
+  }
+}
+
+@media (max-width: 760px) {
+  .control-nav nav {
+    flex-direction: row;
+    justify-content: space-around;
+    gap: 0;
+    margin-top: 0;
+    padding: 0;
+  }
 }
 
 .launch-button,
@@ -196,6 +269,11 @@
   transform: translateY(-2px);
 }
 
+.logout-button:focus-visible > b {
+  opacity: 1;
+  transform: translateX(0);
+}
+
 .button-ripple {
   width: 8px !important;
   height: 8px !important;
@@ -217,6 +295,19 @@
   .secondary-action,
   .printer-open,
   .logout-button {
+    transition-duration: 1ms !important;
+  }
+}
+
+/* Dashboard: los filtros de alertas comparten el anillo de foco del sistema. */
+.station[data-station="dashboard"] .filtro-alerta:focus-visible {
+  outline: none;
+  border-color: #1b9fdf;
+  box-shadow: 0 0 0 4px rgba(27, 159, 223, 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .station[data-station="dashboard"] .filtro-alerta {
     transition-duration: 1ms !important;
   }
 }

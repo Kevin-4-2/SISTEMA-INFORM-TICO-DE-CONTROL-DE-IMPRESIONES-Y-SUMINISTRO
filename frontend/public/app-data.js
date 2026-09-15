@@ -82,21 +82,30 @@ function mostrarMensaje(texto, esError = false) {
 function abrirModal(id) {
   const overlay = document.getElementById(id);
   if (overlay) {
+    clearTimeout(overlay._closeTimer);
+    overlay.classList.remove('modal-closing', 'modal-ready');
     overlay.classList.add('modal-open');
     const dialog = overlay.querySelector('.modal');
     dialog?.classList.add('modal-open');
     dialog?.setAttribute('aria-modal', 'true');
     overlay._previousFocus = document.activeElement;
-    requestAnimationFrame(() => dialog?.querySelector('input, select, textarea, button')?.focus({ preventScroll: true }));
+    requestAnimationFrame(() => {
+      overlay.classList.add('modal-ready');
+      dialog?.querySelector('input, select, textarea, button')?.focus({ preventScroll: true });
+    });
   }
 }
 
 function cerrarModal(id) {
   const overlay = document.getElementById(id);
-  if (overlay) {
-    overlay.classList.remove('modal-open');
-    overlay.querySelector('.modal')?.classList.remove('modal-open');
-    overlay._previousFocus?.focus?.({ preventScroll: true });
+  if (overlay && overlay.classList.contains('modal-open') && !overlay.classList.contains('modal-closing')) {
+    overlay.classList.remove('modal-ready');
+    overlay.classList.add('modal-closing');
+    overlay._closeTimer = setTimeout(() => {
+      overlay.classList.remove('modal-open', 'modal-closing');
+      overlay.querySelector('.modal')?.classList.remove('modal-open');
+      overlay._previousFocus?.focus?.({ preventScroll: true });
+    }, 185);
   }
 }
 
@@ -167,6 +176,7 @@ window.sicisResetSession = () => {
   usuarioRol = null;
   usuarioId = null;
   usuarioNombre = null;
+  delete document.documentElement.dataset.sicisRole;
   const loginButton = document.querySelector('.launch-button');
   if (loginButton) loginButton.disabled = false;
   const loginFeedback = document.getElementById('login-feedback');
@@ -177,8 +187,14 @@ window.sicisResetSession = () => {
 };
 
 function configurarMenuPorRol() {
+  document.documentElement.dataset.sicisRole = normalizarRol(usuarioRol) || '';
   document.querySelectorAll('.station-button[data-seccion]').forEach(button => {
     button.hidden = !puedeAcceder(button.dataset.seccion);
+  });
+  document.querySelectorAll('#command-palette [data-command-go]').forEach(button => {
+    const restringido = !puedeAcceder(button.dataset.commandGo);
+    button.dataset.roleHidden = String(restringido);
+    button.hidden = restringido;
   });
 
   const permisosBoton = [
@@ -192,6 +208,40 @@ function configurarMenuPorRol() {
     const button = document.getElementById(id);
     if (button) button.hidden = !visible;
   });
+  aplicarPermisosDashboard();
+}
+
+function aplicarPermisosDashboard() {
+  document.querySelectorAll('.stat-card[data-card-seccion]').forEach(card => {
+    const destino = card.getAttribute('data-card-seccion');
+    if (!destino) return;
+    if (!card.dataset.onClickRespaldo && card.getAttribute('onclick')) {
+      card.dataset.onClickRespaldo = card.getAttribute('onclick');
+    }
+    if (!puedeAcceder(destino)) {
+      card.hidden = true;
+      card.classList.remove('clickable', 'is-disabled');
+      card.removeAttribute('onclick');
+    } else {
+      card.hidden = false;
+      card.classList.add('clickable');
+      card.classList.remove('is-disabled');
+      if (card.dataset.onClickRespaldo && !card.getAttribute('onclick')) {
+        card.setAttribute('onclick', card.dataset.onClickRespaldo);
+      }
+    }
+  });
+  if (!document.body.dataset.cardsTeclado) {
+    document.body.dataset.cardsTeclado = '1';
+    document.addEventListener('keydown', (event) => {
+      const card = event.target?.closest?.('.stat-card.clickable');
+      if (!card || card.hidden) return;
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        card.click();
+      }
+    });
+  }
 }
 
 function cargarSeccionDatos(seccion) {
@@ -233,6 +283,32 @@ function initNavegacion() {
   });
 }
 
+function sincronizarPillsImpresoras() {
+  document.querySelectorAll('.printer-state-filter[data-filter]').forEach(item => {
+    const activo = item.dataset.filter === filtroEstadoImpresoras;
+    item.classList.toggle('active', activo);
+    if (activo) item.setAttribute('aria-current', 'true');
+    else item.removeAttribute('aria-current');
+  });
+}
+
+function aplicarFiltroImpresorasDesdeResumen(filtro) {
+  const mapa = { activas: 'operativas', operativas: 'operativas', inactivas: 'inactivas', mantenimiento: 'mantenimiento' };
+  if (mapa[filtro]) filtroEstadoImpresoras = mapa[filtro];
+  sincronizarPillsImpresoras();
+  const input = document.getElementById('buscar-impresoras');
+  if (input) {
+    input.value = '';
+    const textos = {
+      operativas: 'Mostrando impresoras operativas (activa)...',
+      inactivas: 'Mostrando impresoras inactivas...',
+      mantenimiento: 'Mostrando impresoras en mantenimiento...'
+    };
+    input.placeholder = textos[filtroEstadoImpresoras] || 'Nombre, modelo o ubicación...';
+  }
+  filtrarImpresoras('');
+}
+
 function navegarDesdeResumen(seccion, filtro) {
   if (!puedeAcceder(seccion)) {
     mostrarMensaje('No tienes permiso para acceder a esta sección', true);
@@ -256,16 +332,8 @@ function navegarDesdeResumen(seccion, filtro) {
     } else if (filtro === 'pendientes' && seccion === 'mantenimientos') {
       // Los mantenimientos ya se cargan ordenados por fecha
       mostrarMensaje('Mostrando mantenimientos pendientes');
-    } else if (filtro === 'activas' && seccion === 'impresoras') {
-      const input = document.getElementById('buscar-impresoras');
-      if (input) {
-        input.value = '';
-        input.placeholder = 'Mostrando impresoras activas...';
-        filtrarImpresoras('');
-        // Filtrar para mostrar solo las activas
-        impresorasFiltradas = impresorasData.filter(i => i.estado === 'activa');
-        paginarImpresoras(1);
-      }
+    } else if (seccion === 'impresoras' && ['activas', 'operativas', 'inactivas', 'mantenimiento'].includes(filtro)) {
+      aplicarFiltroImpresorasDesdeResumen(filtro);
     }
   }, 100);
 }
@@ -273,28 +341,58 @@ function navegarDesdeResumen(seccion, filtro) {
 // --- DASHBOARD ---
 
 async function cargarDashboard() {
+  mostrarEsqueletoDashboard(true);
   try {
     const data = await fetchAPI('/dashboard/resumen');
-    document.getElementById('stat-impresoras').textContent = data.impresoras_activas;
-    document.getElementById('stat-suministros').textContent = data.suministros_bajos;
-    document.getElementById('stat-mantenimientos').textContent = data.mantenimientos_pendientes;
-    document.getElementById('stat-consumo').textContent = data.consumo_mensual;
-    document.getElementById('stat-impresoras-inactivas').textContent = data.impresoras_inactivas;
-    document.getElementById('stat-impresoras-mantenimiento').textContent = data.impresoras_mantenimiento;
+    asignarStat('stat-impresoras', data.impresoras_activas);
+    asignarStat('stat-suministros', data.suministros_bajos);
+    asignarStat('stat-mantenimientos', data.mantenimientos_pendientes);
+    asignarStat('stat-consumo', data.consumo_mensual);
+    asignarStat('stat-impresoras-inactivas', data.impresoras_inactivas);
+    asignarStat('stat-impresoras-mantenimiento', data.impresoras_mantenimiento);
 
     renderizarAlertas(data.alertas || []);
     renderChartConsumo(data.consumo_por_impresora || []);
   } catch (err) {
     mostrarMensaje(err.message, true);
+  } finally {
+    mostrarEsqueletoDashboard(false);
   }
+}
+
+function asignarStat(id, valor) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const numero = Number(valor ?? 0);
+  el.dataset.counter = String(numero);
+  el.textContent = String(numero);
+  el.classList.remove('is-loading');
+  el.removeAttribute('aria-busy');
+  el.removeAttribute('aria-label');
+  el.classList.remove('is-entering', 'is-visible');
+  void el.offsetWidth;
+  el.classList.add('is-entering');
+  requestAnimationFrame(() => el.classList.add('is-visible'));
+}
+
+function mostrarEsqueletoDashboard(cargando) {
+  document.querySelectorAll('.stat-value').forEach(el => {
+    if (cargando && !el.dataset.counter) {
+      el.classList.add('is-loading');
+      el.setAttribute('aria-busy', 'true');
+    }
+  });
+  const grid = document.getElementById('grid-impresoras');
+  if (grid && cargando && !impresorasData.length) mostrarEsqueletoFlota();
 }
 
 function renderizarAlertas(alertas, filtro = 'todas') {
   const lista = document.getElementById('lista-alertas');
+  if (!lista) return;
   
   let alertasFiltradas = alertas;
   if (filtro !== 'todas') {
-    alertasFiltradas = alertas.filter(a => a.gravedad === filtro);
+    alertasFiltradas = alertas.filter(a => normalizarGravedad(a.gravedad) === normalizarGravedad(filtro));
   }
   
   if (!alertasFiltradas.length) {
@@ -311,22 +409,24 @@ function renderizarAlertas(alertas, filtro = 'todas') {
   }
 
   lista.innerHTML = alertasFiltradas.map(a => {
-    const gravedadClass = `alerta-${a.gravedad}`;
+    const gravedad = normalizarGravedad(a.gravedad);
+    const gravedadClass = `alerta-${gravedad}`;
     const tipoIcon = getIconoTipo(a.tipo);
-    const esMantenimiento = a.tipo === 'mantenimiento';
+    const destino = destinoAlerta(a);
+    const referencia = Number.isFinite(Number(a.referencia_id)) ? Number(a.referencia_id) : '';
     
     return `
-      <div class="alerta-card ${gravedadClass}">
+      <article class="alerta-card ${gravedadClass}${destino ? ' alerta-card-link' : ''}" data-alert-target="${destino || ''}" data-alert-reference="${referencia}" role="${destino ? 'link' : 'article'}" tabindex="${destino ? '0' : '-1'}" aria-label="${destino ? 'Abrir origen de la alerta' : ''}"${destino ? '' : ' style="cursor:default;"' }>
         <div class="alerta-icono">
           ${tipoIcon}
         </div>
         <div class="alerta-info">
           <div class="alerta-header">
             <strong class="alerta-nombre">${a.titulo || a.descripcion || 'Alerta'}</strong>
-            <span class="alerta-gravedad badge badge-${a.gravedad}">${a.gravedad.toUpperCase()}</span>
+            <span class="alerta-gravedad badge badge-${gravedad}">${gravedad.toUpperCase()}</span>
           </div>
           <div class="alerta-detalle">
-            <span class="alerta-tipo">${a.tipo}</span>
+            <span class="alerta-tipo">${a.tipo || 'sistema'}</span>
             ${a.referencia_id ? `<span class="alerta-referencia">Ref: ${a.referencia_id}</span>` : ''}
           </div>
           ${a.descripcion ? `
@@ -336,16 +436,85 @@ function renderizarAlertas(alertas, filtro = 'todas') {
           ` : ''}
         </div>
         <div class="alerta-accion">
-          <button class="btn-secundario btn-sm" onclick="cerrarAlerta('${a.id}')" title="Marcar como resuelta">
+          <button class="btn-secundario btn-sm" onclick="event.stopPropagation(); cerrarAlerta('${a.id}')" title="Marcar como resuelta" aria-label="Marcar como resuelta">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M18 6L6 18"/>
               <path d="M6 6l12 12"/>
             </svg>
           </button>
         </div>
-      </div>
+      </article>
     `;
   }).join('');
+
+  lista.querySelectorAll('.alerta-card-link').forEach(card => {
+    const abrir = () => navegarAlerta(card.dataset.alertTarget, card.dataset.alertReference);
+    card.addEventListener('click', event => {
+      if (event.target.closest('button')) return;
+      abrir();
+    });
+    card.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        abrir();
+      }
+    });
+  });
+}
+
+function normalizarGravedad(valor) {
+  return String(valor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+}
+
+function destinoAlerta(alerta) {
+  const tipo = String(alerta?.tipo || '').toLowerCase();
+  if (tipo === 'impresora' && puedeAcceder('impresoras')) return 'impresoras';
+  if (tipo === 'mantenimiento' && puedeAcceder('mantenimientos')) return 'mantenimientos';
+  if (['suministro', 'toner', 'papel', 'stock'].includes(tipo) && puedeAcceder('suministros')) return 'suministros';
+  return '';
+}
+
+function navegarAlerta(seccion, referencia) {
+  if (!seccion) {
+    mostrarMensaje('Esta alerta es informativa y no tiene un módulo asociado.');
+    return;
+  }
+  document.dispatchEvent(new CustomEvent('sicis:routepulse', { detail: { section: seccion } }));
+  if (seccion === 'impresoras' && referencia) {
+    irAImpresoras(referencia);
+    return;
+  }
+  if (seccion === 'suministros' && referencia) {
+    irASuministros(referencia);
+    return;
+  }
+  mostrarSeccion(seccion);
+  if (seccion === 'mantenimientos' && referencia) {
+    setTimeout(() => {
+      const ref = String(referencia);
+      let objetivo = document.querySelector(`[data-mantenimiento-id="${ref}"]`) || document.querySelector(`[data-id="${ref}"]`);
+      if (!objetivo) {
+        const btn = document.querySelector(`button[onclick*="verDetalleMantenimiento(${ref})"], button[onclick*="abrirModalMantenimiento(${ref})"]`);
+        if (btn) objetivo = btn.closest('tr') || btn.closest('article') || btn;
+      }
+      if (!objetivo) {
+        const filas = document.querySelectorAll('#tabla-mantenimientos tr');
+        for (const fila of filas) {
+          const b = fila.querySelector('button[onclick*="Mantenimiento"]');
+          if (b && b.getAttribute('onclick') && b.getAttribute('onclick').includes(ref)) { objetivo = fila; break; }
+        }
+      }
+      if (objetivo) {
+        objetivo.scrollIntoView({ block: 'center' });
+        objetivo.classList.add('target-highlight');
+        setTimeout(() => {
+          objetivo.classList.remove('target-highlight');
+        }, 1600);
+      } else {
+        mostrarMensaje(`Mantenimiento #${ref}: use el buscador del módulo`);
+      }
+    }, 350);
+  }
 }
 
 async function cerrarAlerta(alertaId) {
@@ -404,76 +573,117 @@ function getIconoTipo(tipo) {
 }
 
 function irAImpresoras(id) {
-  document.querySelector('[data-seccion="impresoras"]')?.click();
+  filtroEstadoImpresoras = 'todas';
+  sincronizarPillsImpresoras();
+  mostrarSeccion('impresoras');
   setTimeout(() => {
     const input = document.getElementById('buscar-impresoras');
     if (input) {
       input.value = id;
-      input.dispatchEvent(new Event('input'));
+      filtrarImpresoras(String(id));
     }
   }, 100);
 }
 
 function irASuministros(id) {
-  document.querySelector('[data-seccion="suministros"]')?.click();
+  mostrarSeccion('suministros');
   setTimeout(() => {
     const input = document.getElementById('buscar-suministros');
     if (input) {
       input.value = id;
-      filtrarSuministros(id);
+      filtrarSuministros(String(id));
     }
   }, 100);
 }
 
-// Filtros de alertas
-document.addEventListener('DOMContentLoaded', () => {
+function inicializarFiltrosAlertas() {
   const filtros = document.querySelectorAll('.filtro-alerta');
+  if (!filtros.length) return;
   filtros.forEach(filtro => {
+    if (filtro.dataset.binded === '1') return;
+    filtro.dataset.binded = '1';
     filtro.addEventListener('click', async (e) => {
-      filtros.forEach(f => f.classList.remove('active'));
-      e.target.classList.add('active');
-      
+      const actual = e.currentTarget || e.target.closest('.filtro-alerta');
+      document.querySelectorAll('.filtro-alerta').forEach(f => f.classList.remove('active'));
+      actual.classList.add('active');
       try {
         const data = await fetchAPI('/dashboard/resumen');
-        renderizarAlertas(data.alertas || [], e.target.dataset.filtro);
+        renderizarAlertas(data.alertas || [], actual.dataset.filtro);
       } catch (err) {
         mostrarMensaje(err.message, true);
       }
     });
   });
-});
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', inicializarFiltrosAlertas, { once: true });
+} else {
+  inicializarFiltrosAlertas();
+}
 
 function renderChartConsumo(datos) {
   const ctx = document.getElementById('chart-consumo');
   if (!ctx) return;
-  if (chartConsumo) chartConsumo.destroy();
-  
-  const coloresPapel = datos.map(() => {
-    const alpha = 0.6 + Math.random() * 0.4;
-    return `rgba(59, 130, 246, ${alpha})`;
+  if (chartConsumo) {
+    chartConsumo.destroy();
+    chartConsumo = null;
+  }
+
+  const num = (v) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const filas = Array.isArray(datos) ? datos : [];
+  const normalizados = filas.map((item) => {
+    const row = item || {};
+    return {
+      impresora: row.impresora || row.nombre || 'Sin nombre',
+      papel: num(row.papel ?? row.recargas_papel ?? row.recarga_papel ?? 0),
+      contador: num(row.contador ?? row.contador_mes ?? row.contador_diario ?? row.contador_impresiones ?? row.contador_actual ?? 0),
+      registros: num(row.registros ?? 0),
+      esEstimado: row.es_estimado === true || row.es_estimado === 1 || row.es_estimado === '1' || row.es_estimado === 't' || row.es_estimado === 'true'
+    };
   });
-  
-  const coloresContador = datos.map(() => {
-    const alpha = 0.6 + Math.random() * 0.4;
-    return `rgba(99, 102, 241, ${alpha})`;
+  const host = ctx.closest('.dashboard-panel-large') || ctx.parentElement;
+  const filasUtiles = normalizados.filter((item) => item.papel > 0 || item.contador > 0);
+  const hayValores = filasUtiles.length > 0;
+  host?.classList.toggle('chart-empty', !hayValores);
+  const hayEstimados = normalizados.some((item) => item.registros === 0 && item.esEstimado && (item.papel > 0 || item.contador > 0));
+  const nota = document.getElementById('chart-consumo-nota');
+  if (nota) {
+    nota.hidden = !hayEstimados || !hayValores;
+  }
+  const puedeIrRegistros = typeof puedeAcceder === 'function' ? puedeAcceder('registros') : true;
+  const ctas = host ? host.querySelectorAll('[data-chart-cta="registros"]') : [];
+  ctas.forEach((btn) => {
+    btn.hidden = !puedeIrRegistros;
   });
-  
+  if (!hayValores) {
+    return;
+  }
+
+  const ALPHAS_FIJOS = [0.9, 0.72, 0.82, 0.65];
+  const coloresPapel = normalizados.map((_, i) => `rgba(59, 130, 246, ${ALPHAS_FIJOS[i % ALPHAS_FIJOS.length]})`);
+
+  const coloresContador = normalizados.map((_, i) => `rgba(99, 102, 241, ${ALPHAS_FIJOS[i % ALPHAS_FIJOS.length]})`);
+  const reduceChartMotion = document.documentElement.classList.contains('motion-reduced') || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   chartConsumo = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: datos.map(d => d.impresora),
+      labels: normalizados.map(d => d.impresora),
       datasets: [
-        { 
-          label: 'Recargas de papel', 
-          data: datos.map(d => d.papel), 
+        {
+          label: 'Recargas de papel',
+          data: normalizados.map(d => d.papel),
           backgroundColor: coloresPapel,
           borderColor: '#3b82f6',
           borderWidth: 2,
           borderRadius: 6
         },
-        { 
-          label: 'Contador de impresiones', 
-          data: datos.map(d => d.contador), 
+        {
+          label: 'Contador de impresiones',
+          data: normalizados.map(d => d.contador),
           backgroundColor: coloresContador,
           borderColor: '#6366f1',
           borderWidth: 2,
@@ -485,7 +695,7 @@ function renderChartConsumo(datos) {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
-        y: { 
+        y: {
           beginAtZero: true,
           grid: {
             color: 'rgba(148, 163, 184, 0.1)'
@@ -501,6 +711,10 @@ function renderChartConsumo(datos) {
             display: false
           },
           ticks: {
+            maxRotation: 45,
+            minRotation: 0,
+            autoSkip: true,
+            maxTicksLimit: 8,
             font: {
               family: 'Inter'
             }
@@ -542,16 +756,23 @@ function renderChartConsumo(datos) {
               if (label) {
                 label += ': ';
               }
-              if (context.parsed.y !== null) {
-                label += context.parsed.y.toLocaleString();
+              if (context.parsed.y !== null && context.parsed.y !== undefined) {
+                label += Number(context.parsed.y).toLocaleString();
               }
               return label;
+            },
+            afterLabel: function(context) {
+              const fila = normalizados[context.dataIndex];
+              if (fila && fila.registros === 0 && fila.esEstimado) {
+                return 'Sin registros este mes: contador actual';
+              }
+              return '';
             }
           }
         }
       },
       animation: {
-        duration: 1000,
+        duration: reduceChartMotion ? 0 : 600,
         easing: 'easeOutQuart'
       }
     }
@@ -569,25 +790,65 @@ function crearFiltrosImpresoras() {
   filters.setAttribute('role', 'group');
   filters.setAttribute('aria-label', 'Filtrar impresoras por estado');
   filters.innerHTML = [
-    ['todas', 'Todas'],
-    ['operativas', 'Operativas'],
-    ['mantenimiento', 'Mantenimiento'],
-    ['inactivas', 'Fuera de línea'],
-  ].map(([value, label], index) => `<button type="button" class="printer-state-filter${index === 0 ? ' active' : ''}" data-filter="${value}">${label}</button>`).join('');
+    ['todas', 'Todas', 'Todos los estados'],
+    ['operativas', 'Operativas', 'Estado DB: activa'],
+    ['mantenimiento', 'En mantenimiento', 'Estado DB: mantenimiento'],
+    ['inactivas', 'Inactivas', 'Estado DB: inactiva'],
+  ].map(([value, label, titulo], index) => `<button type="button" class="printer-state-filter${index === 0 ? ' active' : ''}" data-filter="${value}" title="${titulo}" aria-label="${label}, ${titulo}">${label} <span class="pill-count" data-count="${value}"></span></button>`).join('');
   host.appendChild(filters);
   filters.addEventListener('click', (event) => {
     const button = event.target.closest('[data-filter]');
     if (!button) return;
     filtroEstadoImpresoras = button.dataset.filter;
-    filters.querySelectorAll('[data-filter]').forEach(item => item.classList.toggle('active', item === button));
+    sincronizarPillsImpresoras();
     filtrarImpresoras(document.getElementById('buscar-impresoras')?.value || '');
   });
+  actualizarConteosFiltrosImpresoras();
+}
+
+function actualizarConteosFiltrosImpresoras() {
+  if (!impresorasData.length) return;
+  const conteos = {
+    todas: impresorasData.length,
+    operativas: impresorasData.filter(i => i.estado === 'activa').length,
+    mantenimiento: impresorasData.filter(i => i.estado === 'mantenimiento').length,
+    inactivas: impresorasData.filter(i => i.estado === 'inactiva').length
+  };
+  document.querySelectorAll('.pill-count[data-count]').forEach(span => {
+    const valor = conteos[span.dataset.count];
+    span.textContent = valor != null ? `(${valor})` : '';
+  });
+}
+
+function limpiarFiltrosImpresoras() {
+  filtroEstadoImpresoras = 'todas';
+  sincronizarPillsImpresoras();
+  const input = document.getElementById('buscar-impresoras');
+  if (input) {
+    input.value = '';
+    input.placeholder = 'Nombre, modelo o ubicación...';
+  }
+  filtrarImpresoras('');
+}
+
+function mostrarEsqueletoFlota() {
+  const grid = document.getElementById('grid-impresoras');
+  if (!grid) return;
+  grid.setAttribute('aria-busy', 'true');
+  grid.innerHTML = Array.from({ length: 6 }, () => `
+    <article class="printer-unit-card skeleton-ghost" aria-hidden="true">
+      <header><span class="skeleton-line short"></span><span class="skeleton-line tiny"></span></header>
+      <div class="printer-card-body"><div class="skeleton-block"></div><div><p class="skeleton-line"></p><p class="skeleton-line"></p></div></div>
+      <div class="printer-metrics"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+    </article>`).join('');
 }
 
 async function cargarImpresoras() {
   try {
     crearFiltrosImpresoras();
+    if (!impresorasData.length) mostrarEsqueletoFlota();
     impresorasData = await fetchAPI('/impresoras');
+    actualizarConteosFiltrosImpresoras();
     filtrarImpresoras(document.getElementById('buscar-impresoras')?.value || '');
   } catch (err) {
     mostrarMensaje(err.message, true);
@@ -600,7 +861,8 @@ function filtrarImpresoras(texto) {
     const coincideTexto = !t ||
       i.nombre?.toLowerCase().includes(t) ||
       i.modelo?.toLowerCase().includes(t) ||
-      i.ubicacion?.toLowerCase().includes(t);
+      i.ubicacion?.toLowerCase().includes(t) ||
+      String(i.id)===t;
     const coincideEstado = filtroEstadoImpresoras === 'todas' ||
       (filtroEstadoImpresoras === 'operativas' && i.estado === 'activa') ||
       (filtroEstadoImpresoras === 'mantenimiento' && i.estado === 'mantenimiento') ||
@@ -633,20 +895,40 @@ function renderGridImpresoras(lista) {
   if (summary) summary.innerHTML = `
     <span><b>${impresorasFiltradas.length}</b> equipos encontrados</span>
     <span class="summary-online"><i></i>${operativas} operativos</span>
-    <span class="summary-pending"><i></i>${pendientes} pendientes</span>`;
+    <span class="summary-pending" title="Agrupa En mantenimiento + Inactivas"><i></i>${pendientes} pendientes (mantenimiento + inactivas)</span>`;
 
   const estadoMeta = {
     activa: { label: 'Operativa', className: 'online' },
-    mantenimiento: { label: 'Mantenimiento', className: 'maintenance' },
-    inactiva: { label: 'Fuera de línea', className: 'offline' },
+    mantenimiento: { label: 'En mantenimiento', className: 'maintenance' },
+    inactiva: { label: 'Inactiva', className: 'offline' },
   };
 
+  grid?.removeAttribute('aria-busy');
+  if (!lista.length) {
+    const hayDatos = impresorasData.length > 0;
+    const puedeCrear = tieneRol('administrador', 'supervisor');
+    grid.innerHTML = `
+      <div class="fleet-empty">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+          <path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/>
+          <path d="M6 14h12v8H6z"/>
+        </svg>
+        <strong>${hayDatos ? 'Sin equipos con estos filtros' : 'Sin equipos registrados'}</strong>
+        <span>${hayDatos ? 'Ajuste el filtro o término de búsqueda.' : 'Aún no hay impresoras conectadas al sistema.'}</span>
+        <div class="fleet-empty-actions">
+          ${hayDatos ? '<button type="button" class="btn-secundario btn-sm" onclick="limpiarFiltrosImpresoras()">Limpiar filtros</button>' : ''}
+          <button type="button" class="btn-secundario btn-sm" onclick="cargarImpresoras()">Reintentar</button>
+          ${!hayDatos && puedeCrear ? '<button type="button" class="btn-principal btn-sm" onclick="abrirModalImpresora()">Nueva impresora</button>' : ''}
+        </div>
+      </div>`;
+    return;
+  }
   grid.innerHTML = lista.map((i, index) => {
     const estado = estadoMeta[i.estado] || estadoMeta.inactiva;
     const contador = Number(i.contador_actual || 0).toLocaleString('es-SV');
     const nivel = 38 + ((Number(i.id || index) * 17) % 55);
     return `
-      <article class="printer-unit-card status-${estado.className}" data-motion-index="${index % 6}">
+      <article class="printer-unit-card status-${estado.className} is-visible" data-motion-index="${index % 6}">
         <header>
           <span class="printer-status"><i></i>${estado.label}</span>
           <span class="printer-node">SICIS / ${String(i.id).padStart(2, '0')}</span>
@@ -671,7 +953,7 @@ function renderGridImpresoras(lista) {
           ${puedeEliminar ? `<button class="printer-card-action delete" onclick="eliminarImpresora(${i.id})" aria-label="Eliminar ${escaparHTML(i.nombre)}">×</button>` : ''}
         </footer>
       </article>`;
-  }).join('') || '<div class="fleet-empty"><strong>Sin equipos en esta vista</strong><span>Prueba con otro filtro o término de búsqueda.</span></div>';
+  }).join('');
 }
 
 async function verDetalleImpresora(id) {
@@ -785,12 +1067,13 @@ async function cargarSuministros() {
 }
 
 function filtrarSuministros(texto) {
-  const t = texto.toLowerCase().trim();
+  const t = String(texto || '').toLowerCase().trim();
   suministrosFiltrados = suministrosData.filter(s =>
     !t ||
     s.nombre?.toLowerCase().includes(t) ||
     s.tipo?.toLowerCase().includes(t) ||
-    s.codigo?.toLowerCase().includes(t)
+    s.codigo?.toLowerCase().includes(t) ||
+    String(s.id)===t
   );
   renderTablaSuministros(suministrosFiltrados);
 }
@@ -801,6 +1084,11 @@ function renderTablaSuministros(lista) {
   const puedeMovimiento = tieneRol('administrador', 'supervisor', 'operario');
   const puedeEliminar = tieneRol('administrador');
 
+  if (!lista.length) {
+    const hayDatos = suministrosData.length > 0;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center"><div class="table-empty"><strong>${hayDatos ? 'Sin resultados con este filtro' : 'Sin suministros registrados'}</strong><span>${hayDatos ? 'Ajusta la búsqueda para ver más resultados.' : 'Aún no hay movimientos de inventario.'}</span><div class="fleet-empty-actions">${hayDatos ? '<button type="button" class="btn-secundario btn-sm" onclick="limpiarFiltroSuministros()">Limpiar filtros</button>' : ''}<button type="button" class="btn-secundario btn-sm" onclick="cargarSuministros()">Reintentar</button></div></div></td></tr>`;
+    return;
+  }
   tbody.innerHTML = lista.map(s => `
     <tr>
       <td>${s.nombre}</td>
@@ -815,7 +1103,13 @@ function renderTablaSuministros(lista) {
         ${puedeEliminar ? `<button class="btn-danger btn-sm" onclick="eliminarSuministro(${s.id})">Eliminar</button>` : ''}
       </td>
     </tr>
-  `).join('') || '<tr><td colspan="6" style="text-align:center">Sin registros</td></tr>';
+  `).join('');
+}
+
+function limpiarFiltroSuministros() {
+  const input = document.getElementById('buscar-suministros');
+  if (input) input.value = '';
+  filtrarSuministros('');
 }
 
 async function verDetalleSuministro(id) {
@@ -1006,6 +1300,11 @@ async function cargarMantenimientos() {
     const lista = await fetchAPI('/mantenimientos');
     const tbody = document.getElementById('tabla-mantenimientos');
     const puedeEditar = tieneRol('administrador', 'supervisor', 'tecnico');
+    if (!lista.length) {
+      const esTecnico = tieneRol('tecnico');
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center"><div class="table-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg><strong>${esTecnico ? 'Sin tareas pendientes' : 'Sin mantenimientos registrados'}</strong><span>${esTecnico ? 'No tienes intervenciones asignadas. Revisa la flota o registra una nueva orden.' : 'Aún no hay órdenes de servicio en el sistema.'}</span><div class="fleet-empty-actions"><button type="button" class="btn-secundario btn-sm" onclick="cargarMantenimientos()">Reintentar</button>${puedeEditar ? '<button type="button" class="btn-principal btn-sm" onclick="abrirModalMantenimiento()">Nuevo mantenimiento</button>' : ''}</div></div></td></tr>`;
+      return;
+    }
     tbody.innerHTML = lista.map(m => `
       <tr>
         <td>${m.impresora_nombre}</td>
@@ -1017,7 +1316,7 @@ async function cargarMantenimientos() {
           ${puedeEditar ? `<button class="btn-principal btn-sm" onclick="abrirModalMantenimiento(${m.id})">Editar</button>` : ''}
         </td>
       </tr>
-    `).join('') || '<tr><td colspan="5" style="text-align:center">Sin registros</td></tr>';
+    `).join('');
   } catch (err) {
     mostrarMensaje(err.message, true);
   }
@@ -1029,12 +1328,12 @@ async function verDetalleMantenimiento(id) {
     document.getElementById('modal-detalle-titulo').textContent = 'Detalle de mantenimiento';
     document.getElementById('modal-detalle-contenido').innerHTML = `
       <dl class="detalle-dl">
-        <dt>Impresora</dt><dd>${m.impresora_nombre}</dd>
-        <dt>Técnico</dt><dd>${m.tecnico}</dd>
+        <dt>Impresora</dt><dd>${escaparHTML(m.impresora_nombre)}</dd>
+        <dt>Técnico</dt><dd>${escaparHTML(m.tecnico)}</dd>
         <dt>Fecha</dt><dd>${formatearFecha(m.fecha)}</dd>
         <dt>Estado</dt><dd>${badgeMantenimiento(m.estado)}</dd>
-        <dt>Descripción</dt><dd>${m.descripcion}</dd>
-        <dt>Solución</dt><dd>${m.solucion || '-'}</dd>
+        <dt>Descripción</dt><dd>${escaparHTML(m.descripcion)}</dd>
+        <dt>Solución</dt><dd>${escaparHTML(m.solucion || '-')}</dd>
       </dl>`;
     abrirModal('modal-detalle');
   } catch (err) {
@@ -1123,6 +1422,11 @@ async function guardarMantenimiento() {
 async function cargarRegistros() {
   try {
     const lista = await fetchAPI('/registros');
+    if (!lista.length) {
+      const puedeCrear = tieneRol('administrador', 'supervisor', 'operario');
+      document.getElementById('tabla-registros').innerHTML = `<tr><td colspan="7" style="text-align:center"><div class="table-empty"><strong>Sin registros diarios</strong><span>Aún no hay lecturas cargadas para mostrar.</span><div class="fleet-empty-actions"><button type="button" class="btn-secundario btn-sm" onclick="cargarRegistros()">Reintentar</button>${puedeCrear ? '<button type="button" class="btn-principal btn-sm" onclick="abrirModalRegistro()">Nuevo registro</button>' : ''}</div></div></td></tr>`;
+      return;
+    }
     document.getElementById('tabla-registros').innerHTML = lista.map(r => `
       <tr>
         <td>${r.impresora_nombre}</td>
@@ -1133,7 +1437,7 @@ async function cargarRegistros() {
         <td>${formatearFecha(r.fecha)}</td>
         <td>${r.usuario_nombre}</td>
       </tr>
-    `).join('') || '<tr><td colspan="7" style="text-align:center">Sin registros</td></tr>';
+    `).join('');
   } catch (err) {
     mostrarMensaje(err.message, true);
   }
@@ -1236,6 +1540,10 @@ function imprimirReporte() {
 async function cargarReporteConsumo() {
   try {
     const lista = await fetchAPI(`/reportes/consumo-mensual?periodo=${encodeURIComponent(periodoSeleccionado())}`);
+    if (!lista.length) {
+      document.getElementById('tabla-reporte-consumo').innerHTML = '<tr><td colspan="4" style="text-align:center"><div class="table-empty"><strong>Sin datos para este período</strong><span>Prueba con otro mes o registra actividad diaria.</span><div class="fleet-empty-actions"><button type="button" class="btn-secundario btn-sm" onclick="recargarReportes()">Reintentar</button></div></div></td></tr>';
+      return;
+    }
     document.getElementById('tabla-reporte-consumo').innerHTML = lista.map(r => `
       <tr>
         <td>${escaparHTML(r.impresora)}</td>
@@ -1243,7 +1551,7 @@ async function cargarReporteConsumo() {
         <td>${r.contador_minimo}</td>
         <td>${r.contador_maximo}</td>
       </tr>
-    `).join('') || '<tr><td colspan="4" style="text-align:center">Sin datos</td></tr>';
+    `).join('');
   } catch (err) {
     mostrarMensaje(err.message, true);
   }
@@ -1252,20 +1560,25 @@ async function cargarReporteConsumo() {
 async function cargarReporteToner() {
   try {
     const lista = await fetchAPI(`/reportes/toner?periodo=${encodeURIComponent(periodoSeleccionado())}`);
-    document.getElementById('tabla-reporte-toner').innerHTML = lista.map(r => `
-      <tr><td>${escaparHTML(r.impresora)}</td><td>${r.cambios_toner}</td></tr>
-    `).join('') || '<tr><td colspan="2" style="text-align:center">Sin datos</td></tr>';
+    if (!lista.length) {
+      document.getElementById('tabla-reporte-toner').innerHTML = '<tr><td colspan="2" style="text-align:center"><div class="table-empty"><strong>Sin cambios de tóner este mes</strong><span>No se registraron reemplazos en el período.</span></div></td></tr>';
+    } else {
+      document.getElementById('tabla-reporte-toner').innerHTML = lista.map(r => `
+        <tr><td>${escaparHTML(r.impresora)}</td><td>${r.cambios_toner}</td></tr>
+      `).join('');
+    }
 
     const ctx = document.getElementById('chart-toner');
     if (ctx) {
       if (chartToner) chartToner.destroy();
+      const reduceTonerMotion = document.documentElement.classList.contains('motion-reduced') || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       chartToner = new Chart(ctx, {
         type: 'bar',
         data: {
           labels: lista.map(r => r.impresora),
           datasets: [{ label: 'Cambios de tóner', data: lista.map(r => r.cambios_toner), backgroundColor: '#8b5cf6' }]
         },
-        options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+        options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, animation: { duration: reduceTonerMotion ? 0 : 600, easing: 'easeOutQuart' } }
       });
     }
   } catch (err) {
@@ -1276,6 +1589,10 @@ async function cargarReporteToner() {
 async function cargarReporteProyeccion() {
   try {
     const lista = await fetchAPI('/reportes/proyeccion');
+    if (!lista.length) {
+      document.getElementById('tabla-reporte-proyeccion').innerHTML = '<tr><td colspan="6" style="text-align:center"><div class="table-empty"><strong>Sin proyección disponible</strong><span>Se necesitan más movimientos para calcular pedidos.</span></div></td></tr>';
+      return;
+    }
     document.getElementById('tabla-reporte-proyeccion').innerHTML = lista.map(r => `
       <tr>
         <td>${escaparHTML(r.suministro)}</td>
@@ -1285,7 +1602,7 @@ async function cargarReporteProyeccion() {
         <td>${r.pedido_sugerido}</td>
         <td>${badgeSiNo(r.requiere_pedido)}</td>
       </tr>
-    `).join('') || '<tr><td colspan="6" style="text-align:center">Sin datos</td></tr>';
+    `).join('');
   } catch (err) {
     mostrarMensaje(err.message, true);
   }
@@ -1296,6 +1613,10 @@ async function cargarReporteProyeccion() {
 async function cargarUsuarios() {
   try {
     const lista = await fetchAPI('/usuarios');
+    if (!lista.length) {
+      document.getElementById('tabla-usuarios').innerHTML = '<tr><td colspan="5" style="text-align:center"><div class="table-empty"><strong>Sin perfiles registrados</strong><span>Crea el primer perfil para empezar.</span><div class="fleet-empty-actions"><button type="button" class="btn-principal btn-sm" onclick="abrirModalUsuario()">Crear perfil</button></div></div></td></tr>';
+      return;
+    }
     document.getElementById('tabla-usuarios').innerHTML = lista.map(u => `
       <tr>
         <td>${u.nombre}</td>
@@ -1307,7 +1628,7 @@ async function cargarUsuarios() {
           <button class="btn-danger btn-sm" onclick="eliminarUsuario(${u.id})">Eliminar</button>
         </td>
       </tr>
-    `).join('') || '<tr><td colspan="5" style="text-align:center">Sin usuarios</td></tr>';
+    `).join('');
   } catch (err) {
     mostrarMensaje(err.message, true);
   }
@@ -1417,6 +1738,10 @@ function parametrosAuditoria() {
 async function cargarAuditoria() {
   try {
     const lista = await fetchAPI(`/auditoria?${parametrosAuditoria()}`);
+    if (!lista.length) {
+      document.getElementById('tabla-auditoria').innerHTML = '<tr><td colspan="6" style="text-align:center"><div class="table-empty"><strong>Sin acciones para estos filtros</strong><span>Ajusta las fechas o limpia la búsqueda.</span><div class="fleet-empty-actions"><button type="button" class="btn-secundario btn-sm" onclick="limpiarFiltrosAuditoria()">Limpiar filtros</button></div></div></td></tr>';
+      return;
+    }
     document.getElementById('tabla-auditoria').innerHTML = lista.map(item => `
       <tr>
         <td>${escaparHTML(new Date(item.fecha).toLocaleString('es-SV'))}</td>
@@ -1426,10 +1751,20 @@ async function cargarAuditoria() {
         <td>${escaparHTML(item.direccion_ip || '-')}</td>
         <td><code>${escaparHTML(JSON.stringify(item.detalle || {}))}</code></td>
       </tr>
-    `).join('') || '<tr><td colspan="6" style="text-align:center">Sin acciones registradas</td></tr>';
+    `).join('');
   } catch (err) {
     mostrarMensaje(err.message, true);
   }
+}
+
+function limpiarFiltrosAuditoria() {
+  const accion = document.getElementById('filtro-auditoria-accion');
+  const desde = document.getElementById('filtro-auditoria-desde');
+  const hasta = document.getElementById('filtro-auditoria-hasta');
+  if (accion) accion.value = '';
+  if (desde) desde.value = '';
+  if (hasta) hasta.value = '';
+  cargarAuditoria();
 }
 
 function exportarAuditoriaCSV() {
@@ -1439,6 +1774,28 @@ function exportarAuditoriaCSV() {
 function imprimirAuditoria() {
   window.print();
 }
+
+// Abrir el calendario al hacer click (o Enter) sobre los campos de fecha/mes de auditoría y reportes.
+function abrirSelectorFecha(input) {
+  if (!input || input.disabled || input.readOnly) return false;
+  if (typeof input.showPicker !== 'function') return false;
+  try {
+    input.showPicker();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+document.addEventListener('click', (event) => {
+  abrirSelectorFecha(event.target.closest('input[type="date"], input[type="month"]'));
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter') return;
+  const input = event.target.closest('input[type="date"], input[type="month"]');
+  if (abrirSelectorFecha(input)) event.preventDefault();
+});
 
 // --- ARRANQUE ---
 
@@ -1453,6 +1810,7 @@ async function iniciarAplicacionReal() {
     initNavegacion();
     navegacionInicializada = true;
   }
+  inicializarFiltrosAlertas();
   cargarSeccionDatos('dashboard');
   return true;
 }

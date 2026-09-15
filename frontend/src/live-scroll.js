@@ -4,10 +4,10 @@ const scroller = document.querySelector("#station-viewport");
 const root = document.querySelector("#functional-stations");
 const selector = [
   ".stat-card",
+  ".dashboard-panel",
   ".dashboard-chart-card",
   ".dashboard-alertas-card",
   ".tabla-wrapper",
-  ".station tbody tr",
   ".reporte-card",
   ".printer-unit-card",
   ".alerta-card",
@@ -24,7 +24,7 @@ const observer = new IntersectionObserver((entries) => {
     const index = Number(element.dataset.motionIndex || 0);
     gsap.fromTo(element,
       { y: 28, scale: .985, opacity: 0 },
-      { y: 0, scale: 1, opacity: 1, duration: .58, delay: Math.min(index * .025, .15), ease: "power3.out", force3D: true, clearProps: "transform,opacity", onComplete: () => { element.style.willChange = "auto"; } },
+      { y: 0, scale: 1, opacity: 1, duration: .42, delay: Math.min(index * .02, .1), ease: "power3.out", force3D: true, clearProps: "transform,opacity", onComplete: () => { element.style.willChange = "auto"; } },
     );
   }
 }, { root: scroller, threshold: .12, rootMargin: "0px 0px -7% 0px" });
@@ -55,7 +55,7 @@ scroller.addEventListener("scroll", () => {
   previousScroll = scroller.scrollTop;
   const scrollRange = Math.max(1, scroller.scrollHeight - scroller.clientHeight);
   scroller.style.setProperty("--scroll-progress", String(Math.min(1, scroller.scrollTop / scrollRange)));
-  headerY(Math.max(-7, Math.min(7, delta * -.16)));
+  headerY(Math.max(-4, Math.min(4, delta * -.1)));
   window.clearTimeout(scroller._sicisScrollTimer);
   scroller._sicisScrollTimer = window.setTimeout(() => headerY(0), 90);
 }, { passive: true });

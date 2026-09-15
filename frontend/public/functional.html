@@ -4,60 +4,60 @@
           <h1 class="titulo-principal">Dashboard</h1>
           <p class="descripcion">Resumen general del estado del sistema</p>
           <div class="dashboard-cards">
-            <div class="stat-card stat-success clickable" onclick="navegarDesdeResumen('impresoras', 'activas')">
+            <div class="stat-card stat-success clickable" tabindex="0" data-card-seccion="impresoras" data-flow-route="printers-active" data-filtro="activas" onclick="navegarDesdeResumen('impresoras', 'activas')">
               <div class="stat-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
                   <path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/>
                   <path d="M6 14h12v8H6z"/>
                 </svg>
               </div>
               <div class="stat-content">
                 <span class="stat-label">Impresoras activas</span>
-                <span class="stat-value" id="stat-impresoras">0</span>
+                <span class="stat-value is-loading" id="stat-impresoras" data-counter="0" aria-busy="true" aria-label="Cargando impresoras activas">&nbsp;</span>
                 <span class="stat-context">Disponibles ahora</span>
               </div>
             </div>
-            <div class="stat-card stat-warning clickable" onclick="navegarDesdeResumen('suministros', 'bajos')">
+            <div class="stat-card stat-warning clickable" tabindex="0" data-card-seccion="suministros" data-flow-route="supplies-low" data-filtro="bajos" onclick="navegarDesdeResumen('suministros', 'bajos')">
               <div class="stat-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
                   <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
                   <line x1="7" y1="7" x2="7.01" y2="7"/>
                 </svg>
               </div>
               <div class="stat-content">
                 <span class="stat-label">Suministros bajos</span>
-                <span class="stat-value" id="stat-suministros">0</span>
+                <span class="stat-value is-loading" id="stat-suministros" data-counter="0" aria-busy="true" aria-label="Cargando suministros bajos">&nbsp;</span>
                 <span class="stat-context">Requieren reposición</span>
               </div>
             </div>
-            <div class="stat-card stat-info clickable" onclick="navegarDesdeResumen('mantenimientos', 'pendientes')">
+            <div class="stat-card stat-info clickable" tabindex="0" data-card-seccion="mantenimientos" data-flow-route="maintenance-pending" data-filtro="pendientes" onclick="navegarDesdeResumen('mantenimientos', 'pendientes')">
               <div class="stat-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
                   <circle cx="12" cy="12" r="10"/>
                   <polyline points="12 6 12 12 16 14"/>
                 </svg>
               </div>
               <div class="stat-content">
                 <span class="stat-label">Mantenimientos pendientes</span>
-                <span class="stat-value" id="stat-mantenimientos">0</span>
+                <span class="stat-value is-loading" id="stat-mantenimientos" data-counter="0" aria-busy="true" aria-label="Cargando mantenimientos pendientes">&nbsp;</span>
                 <span class="stat-context">Órdenes por atender</span>
               </div>
             </div>
-            <div class="stat-card stat-primary clickable" onclick="navegarDesdeResumen('reportes', 'consumo')">
+            <div class="stat-card stat-primary clickable" tabindex="0" data-card-seccion="reportes" data-flow-route="monthly-consumption" data-filtro="consumo" onclick="navegarDesdeResumen('reportes', 'consumo')">
               <div class="stat-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
                   <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
                 </svg>
               </div>
               <div class="stat-content">
                 <span class="stat-label">Consumo mensual</span>
-                <span class="stat-value" id="stat-consumo">0</span>
+                <span class="stat-value is-loading" id="stat-consumo" data-counter="0" aria-busy="true" aria-label="Cargando consumo mensual">&nbsp;</span>
                 <span class="stat-context">Hojas registradas</span>
               </div>
             </div>
-            <div class="stat-card stat-secondary clickable" onclick="navegarDesdeResumen('impresoras', 'inactivas')">
+            <div class="stat-card stat-secondary clickable" tabindex="0" data-card-seccion="impresoras" data-flow-route="printers-offline" data-filtro="inactivas" onclick="navegarDesdeResumen('impresoras', 'inactivas')">
               <div class="stat-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
                   <circle cx="12" cy="12" r="10"/>
                   <line x1="12" y1="8" x2="12" y2="12"/>
                   <line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -65,35 +65,72 @@
               </div>
               <div class="stat-content">
                 <span class="stat-label">Impresoras inactivas</span>
-                <span class="stat-value" id="stat-impresoras-inactivas">0</span>
+                <span class="stat-value is-loading" id="stat-impresoras-inactivas" data-counter="0" aria-busy="true" aria-label="Cargando impresoras inactivas">&nbsp;</span>
                 <span class="stat-context">Fuera de línea</span>
               </div>
             </div>
-            <div class="stat-card stat-accent clickable" onclick="navegarDesdeResumen('impresoras', 'mantenimiento')">
+            <div class="stat-card stat-accent clickable" tabindex="0" data-card-seccion="impresoras" data-flow-route="printers-service" data-filtro="mantenimiento" onclick="navegarDesdeResumen('impresoras', 'mantenimiento')">
               <div class="stat-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
                   <path d="M14.7 6.3a1 1 0 010 1.4l-1.6 1.6a1 1 0 01-1.4 0l-3.77-3.77a6 6 0 017.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91"/>
                 </svg>
               </div>
               <div class="stat-content">
                 <span class="stat-label">En mantenimiento</span>
-                <span class="stat-value" id="stat-impresoras-mantenimiento">0</span>
+                <span class="stat-value is-loading" id="stat-impresoras-mantenimiento" data-counter="0" aria-busy="true" aria-label="Cargando impresoras en mantenimiento">&nbsp;</span>
                 <span class="stat-context">Intervenciones activas</span>
               </div>
             </div>
           </div>
           <div class="dashboard-grid">
             <div class="dashboard-panel dashboard-panel-large">
-              <h3>📊 Consumo por impresora (mes actual)</h3>
-              <canvas id="chart-consumo"></canvas>
+              <div class="panel-head">
+                <span class="panel-icon panel-icon-chart" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="20" x2="18" y2="10"/>
+                    <line x1="12" y1="20" x2="12" y2="4"/>
+                    <line x1="6" y1="20" x2="6" y2="14"/>
+                  </svg>
+                </span>
+                <div class="panel-titles">
+                  <h3>Consumo por impresora</h3>
+                  <p>Mes actual · papel y contador por equipo</p>
+                </div>
+              </div>
+              <p class="chart-note" id="chart-consumo-nota" title="Sin registros este mes: se muestra el contador actual del equipo." hidden>Sin registros este mes: se muestra el contador actual del equipo.</p>
+              <div class="chart-stage">
+                <canvas id="chart-consumo"></canvas>
+                <div class="chart-empty-state" aria-live="polite">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="18" y1="20" x2="18" y2="10"/>
+                    <line x1="12" y1="20" x2="12" y2="4"/>
+                    <line x1="6" y1="20" x2="6" y2="14"/>
+                  </svg>
+                  <strong>Sin lecturas este mes</strong>
+                  <span>Aún no hay lecturas registradas este mes.</span>
+                  <button type="button" class="chart-empty-cta" data-chart-cta="registros" onclick="mostrarSeccion('registros')">Ir a Registros</button>
+                </div>
+              </div>
             </div>
             <div class="dashboard-panel dashboard-panel-alerts">
-              <h3>⚠️ Alertas operativas</h3>
-              <div class="alertas-filtros">
+              <div class="panel-head">
+                <span class="panel-icon panel-icon-alerts" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                  </svg>
+                </span>
+                <div class="panel-titles">
+                  <h3>Alertas operativas</h3>
+                  <p>Tiempo real · filtra por criticidad</p>
+                </div>
+              </div>
+              <div class="alertas-filtros" role="group" aria-label="Filtrar alertas por criticidad">
                 <button class="filtro-alerta active" data-filtro="todas">Todas</button>
                 <button class="filtro-alerta" data-filtro="critico">Críticas</button>
                 <button class="filtro-alerta" data-filtro="alto">Altas</button>
                 <button class="filtro-alerta" data-filtro="medio">Medias</button>
+                <button class="filtro-alerta" data-filtro="bajo">Bajas</button>
               </div>
               <div id="lista-alertas" class="lista-alertas">
                 <div class="sin-alertas">
@@ -122,8 +159,13 @@
             <button class="btn-principal" id="btn-nueva-impresora" onclick="abrirModalImpresora()">Nueva impresora</button>
           </div>
           <div class="fleet-summary" id="fleet-summary" aria-live="polite"></div>
-          <div class="printer-fleet-grid" id="grid-impresoras">
-            <div class="fleet-empty">Cargando equipos conectados…</div>
+          <div class="printer-fleet-grid is-loading" id="grid-impresoras" aria-busy="true" aria-live="polite">
+            <article class="printer-unit-card skeleton-ghost" aria-hidden="true"><header><span class="skeleton-line short"></span><span class="skeleton-line tiny"></span></header><div class="printer-card-body"><div class="skeleton-block"></div><div><p class="skeleton-line"></p><p class="skeleton-line"></p></div></div><div class="printer-metrics"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></article>
+            <article class="printer-unit-card skeleton-ghost" aria-hidden="true"><header><span class="skeleton-line short"></span><span class="skeleton-line tiny"></span></header><div class="printer-card-body"><div class="skeleton-block"></div><div><p class="skeleton-line"></p><p class="skeleton-line"></p></div></div><div class="printer-metrics"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></article>
+            <article class="printer-unit-card skeleton-ghost" aria-hidden="true"><header><span class="skeleton-line short"></span><span class="skeleton-line tiny"></span></header><div class="printer-card-body"><div class="skeleton-block"></div><div><p class="skeleton-line"></p><p class="skeleton-line"></p></div></div><div class="printer-metrics"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></article>
+            <article class="printer-unit-card skeleton-ghost" aria-hidden="true"><header><span class="skeleton-line short"></span><span class="skeleton-line tiny"></span></header><div class="printer-card-body"><div class="skeleton-block"></div><div><p class="skeleton-line"></p><p class="skeleton-line"></p></div></div><div class="printer-metrics"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></article>
+            <article class="printer-unit-card skeleton-ghost" aria-hidden="true"><header><span class="skeleton-line short"></span><span class="skeleton-line tiny"></span></header><div class="printer-card-body"><div class="skeleton-block"></div><div><p class="skeleton-line"></p><p class="skeleton-line"></p></div></div><div class="printer-metrics"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></article>
+            <article class="printer-unit-card skeleton-ghost" aria-hidden="true"><header><span class="skeleton-line short"></span><span class="skeleton-line tiny"></span></header><div class="printer-card-body"><div class="skeleton-block"></div><div><p class="skeleton-line"></p><p class="skeleton-line"></p></div></div><div class="printer-metrics"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></article>
           </div>
           <div class="paginacion" id="paginacion-impresoras">
             <button class="btn-secundario" id="btn-imp-anterior" onclick="paginarImpresoras(impresorasPagina - 1)">Anterior</button>
@@ -287,10 +329,10 @@
 
 <!-- Modal genérico -->
   <div id="modal-formulario" class="modal-overlay">
-    <div class="modal" role="dialog">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-form-titulo">
       <div class="modal-header">
         <h3 id="modal-form-titulo" class="titulo-principal" style="margin:0;font-size:1.3em;">Formulario</h3>
-        <button type="button" class="modal-close" onclick="cerrarModal('modal-formulario')" aria-label="Cerrar">×</button>
+        <button type="button" class="modal-close" onclick="cerrarModal('modal-formulario')" aria-label="Cerrar formulario">×</button>
       </div>
       <div id="modal-form-contenido" class="modal-content"></div>
     </div>
@@ -298,10 +340,10 @@
 
   <!-- Modal detalle solo lectura -->
   <div id="modal-detalle" class="modal-overlay">
-    <div class="modal" role="dialog">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-detalle-titulo">
       <div class="modal-header">
         <h3 id="modal-detalle-titulo" class="titulo-principal" style="margin:0;font-size:1.3em;">Detalle</h3>
-        <button type="button" class="modal-close" onclick="cerrarModal('modal-detalle')" aria-label="Cerrar">×</button>
+        <button type="button" class="modal-close" onclick="cerrarModal('modal-detalle')" aria-label="Cerrar detalle">×</button>
       </div>
       <div id="modal-detalle-contenido" class="modal-content"></div>
       <div class="modal-actions">

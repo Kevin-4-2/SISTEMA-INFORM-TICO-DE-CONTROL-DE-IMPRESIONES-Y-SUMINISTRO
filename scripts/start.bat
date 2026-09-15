@@ -5,7 +5,7 @@ echo =====================================
 echo.
 
 cd /d "%~dp0..\frontend"
-echo Preparando frontend cinematografico...
+echo Preparando interfaz SICIS...
 call npm install --no-audit --no-fund
 if errorlevel 1 (
   echo ERROR: No se pudieron instalar las dependencias del frontend.

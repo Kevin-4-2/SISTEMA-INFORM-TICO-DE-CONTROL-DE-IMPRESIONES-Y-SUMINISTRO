@@ -542,7 +542,7 @@ html, body {
   min-height: 100vh;
   width: 100vw;
   overflow-x: hidden;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 25%, #cbd5e1 50%, #94a3b8 75%, #64748b 100%);
   background-size: 200% 200%;
   animation: subtleGradient 12s ease infinite;
@@ -1674,6 +1674,21 @@ body.dark-mode .form-card-group textarea::placeholder {
   padding: 0 12px;
   background: var(--surface-color, #fff);
   color: var(--text-primary);
+  cursor: pointer;
+}
+
+.auditoria-filtros input[type="date"]::-webkit-calendar-picker-indicator,
+.reportes-acciones input[type="month"]::-webkit-calendar-picker-indicator {
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  opacity: .68;
+  transition: opacity .18s ease;
+}
+
+.auditoria-filtros input[type="date"]:hover::-webkit-calendar-picker-indicator,
+.reportes-acciones input[type="month"]:hover::-webkit-calendar-picker-indicator {
+  opacity: 1;
 }
 
 .reportes-acciones input[type="month"] {
@@ -1701,12 +1716,17 @@ body.dark-mode .form-card-group textarea::placeholder {
 }
 
 @media print {
+  /* Solo se imprime la sección activa: nada de duplicar auditoría + reportes en un mismo PDF. */
+  #scene-canvas, .control-nav, .room-header, .toast, .detail-layer, .command-palette,
   .header, .sidebar, .footer, .mensaje-sistema, .auditoria-filtros, .reportes-acciones, .reportes-tabs { display: none !important; }
   .seccion-panel { display: none !important; }
-  #panel-auditoria { display: block !important; }
-  #panel-reportes { display: block !important; }
+  .seccion-panel.active { display: block !important; }
   #panel-reportes .tab-reporte { display: none !important; }
   #panel-reportes .tab-reporte.active { display: block !important; }
   .app-content, .main-container { padding: 0 !important; margin: 0 !important; }
+  .station-viewport { height: auto !important; overflow: visible !important; }
   .tabla-wrapper { overflow: visible !important; border: 0 !important; }
+  .tabla-wrapper table { width: 100%; }
+  .tabla-wrapper tbody tr { page-break-inside: avoid; }
+  thead { display: table-header-group; }
 }

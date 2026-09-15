@@ -1,0 +1,48 @@
+services:
+  - type: web
+    name: sicis-demo
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: main
+    autoDeploy: true
+    healthCheckPath: /health
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: DB_HOST
+        fromDatabase:
+          name: sicis-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: sicis-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: sicis-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: sicis-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: sicis-db
+          property: password
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: SESSION_TTL_MS
+        value: "28800000"
+
+databases:
+  - name: sicis-db
+    databaseName: control_impresiones
+    user: sicis
+    plan: free
+    postgresMajorVersion: "16"
+    ipAllowList: []

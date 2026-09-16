@@ -838,6 +838,54 @@ app.delete('/usuarios/:id', requireAuth, requireRoles('administrador'), async (r
   }
 });
 
+app.get('/alertas', requireAuth, requireRoles('administrador', 'supervisor', 'operario', 'tecnico'), async (req, res) => {
+  try {
+    const params = [];
+    const clauses = [];
+    if (req.query.activa === 'true') { params.push(true); clauses.push(`activa = $${params.length}`); }
+    if (req.query.activa === 'false') { params.push(false); clauses.push(`activa = $${params.length}`); }
+    const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+    const result = await pool.query(`
+      SELECT id, tipo, gravedad, titulo, descripcion, referencia_id, activa, fecha_creacion, fecha_resolucion
+      FROM alertas ${where}
+      ORDER BY
+        CASE gravedad WHEN 'crítico' THEN 0 WHEN 'alto' THEN 1 WHEN 'medio' THEN 2 ELSE 3 END,
+        fecha_creacion DESC
+      LIMIT 200
+    `, params);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error listando alertas:', error);
+    res.status(500).json({ error: 'Error interno' });
+  }
+});
+
+app.post('/alertas', requireAuth, requireRoles('administrador', 'supervisor'), async (req, res) => {
+  try {
+    const { tipo, gravedad, titulo, descripcion, referencia_id } = req.body;
+    const TIPOS = ['suministro', 'impresora', 'mantenimiento', 'sistema'];
+    const GRAVEDADES = ['crítico', 'alto', 'medio', 'bajo'];
+    if (!TIPOS.includes(tipo)) {
+      return res.status(400).json({ error: 'Tipo inválido; use: ' + TIPOS.join(', ') });
+    }
+    if (!GRAVEDADES.includes(gravedad)) {
+      return res.status(400).json({ error: 'Gravedad inválida; use: ' + GRAVEDADES.join(', ') });
+    }
+    if (!titulo?.trim() || titulo.trim().length > 255) {
+      return res.status(400).json({ error: 'Título obligatorio (máximo 255 caracteres)' });
+    }
+    const result = await pool.query(
+      `INSERT INTO alertas (tipo, gravedad, titulo, descripcion, referencia_id, activa)
+       VALUES ($1, $2, $3, $4, $5, true) RETURNING *`,
+      [tipo, gravedad, titulo.trim(), descripcion?.trim() || null, referencia_id != null && Number.isInteger(Number(referencia_id)) ? Number(referencia_id) : null]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Error creando alerta:', error);
+    res.status(500).json({ error: error.message || 'Error interno' });
+  }
+});
+
 app.delete('/alertas/:id', requireAuth, requireRoles('administrador', 'supervisor'), async (req, res) => {
   try {
     const result = await pool.query('UPDATE alertas SET activa = false, fecha_resolucion = NOW() WHERE id = $1 RETURNING id', [req.params.id]);

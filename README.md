@@ -83,7 +83,7 @@ El backend aplica autorización por rol; ocultar una opción en la interfaz no s
 | Administrador | Acceso completo, usuarios y auditoría |
 | Supervisor | Operación y reportes |
 | Operario | Consulta y registros diarios |
-| Técnico | Consulta y mantenimientos |
+| Técnico | Consulta y mantenimientos. |
 
 ## Verificación antes de publicar
 

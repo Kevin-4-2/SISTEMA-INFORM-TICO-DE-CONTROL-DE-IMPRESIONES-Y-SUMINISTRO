@@ -199,7 +199,7 @@ app.get('/health', async (req, res) => {
     await testConnection();
     res.json({ status: 'ok', database: 'connected' });
   } catch (error) {
-    res.status(503).json({ status: 'error', database: 'disconnected', error: error.message });
+    res.status(503).json({ status: 'error', database: 'disconnected' });
   }
 });
 
@@ -993,7 +993,7 @@ app.post('/alertas', requireAuth, requireRoles('administrador', 'supervisor'), a
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error creando alerta:', error);
-    res.status(500).json({ error: error.message || 'Error interno' });
+    res.status(500).json({ error: 'Error interno' });
   }
 });
 

@@ -18,6 +18,6 @@ Fecha: 15 de noviembre de 2026.
 
 ## Estado del repositorio y siguientes pasos
 
-- Publicar este cambio y comprobar el despliegue y `/health` en Render.
+- Publicado el commit `5f45b97` en `main`; despliegue `dep-dbsufnd6e07s73aua1j0` en estado `live` en Render. `https://sicis.onrender.com/health` respondió `{"status":"ok","database":"connected"}` y la página principal devolvió HTTP 200.
 - Probar en un teléfono real o en el navegador autenticado los ocho módulos, formularios y diálogos, especialmente en orientación horizontal.
 - No se incorporaron cambios locales ajenos a esta tarea en `backend/` ni el cambio previo aún sin confirmar de `frontend/public/app-data.js` para el selector de técnicos. Preservarlos para revisión independiente.

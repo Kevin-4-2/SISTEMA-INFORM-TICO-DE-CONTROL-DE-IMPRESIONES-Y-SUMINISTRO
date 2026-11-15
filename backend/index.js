@@ -133,6 +133,18 @@ function validarNumeroEnteroFinito(valor, nombreCampo, permitirCero = false, obl
   return { valido: true, mensaje: null };
 }
 
+function validarFecha(valor, nombreCampo = 'Fecha') {
+  if (typeof valor !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) {
+    return { valido: false, mensaje: `${nombreCampo} inválida; use AAAA-MM-DD` };
+  }
+  const [anio, mes, dia] = valor.split('-').map(Number);
+  const fecha = new Date(Date.UTC(anio, mes - 1, dia));
+  if (fecha.getUTCFullYear() !== anio || fecha.getUTCMonth() !== mes - 1 || fecha.getUTCDate() !== dia) {
+    return { valido: false, mensaje: `${nombreCampo} inválida; use AAAA-MM-DD` };
+  }
+  return { valido: true, mensaje: null };
+}
+
 const ESTADOS_IMPRESORA = ['activa', 'inactiva', 'mantenimiento'];
 const TIPOS_SUMINISTRO = ['toner', 'papel', 'tinta', 'otro'];
 const ESTADOS_MANTENIMIENTO = ['pendiente', 'en proceso', 'finalizado'];
@@ -187,7 +199,7 @@ app.use((req, res, next) => {
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) || ['/login', '/logout'].includes(req.path)) return next();
   res.on('finish', () => {
     if (res.statusCode < 400 && req.session?.usuario_id) {
-      registrarAuditoria(req, `${req.method} ${req.path}`, req.path.split('/')[1] || 'sistema');
+      registrarAuditoria(req, `${req.method} ${req.path}`, req.path.split('/')[1] || 'sistema', res.locals?.auditoriaDetalle || {});
     }
   });
   next();
@@ -234,13 +246,14 @@ app.get('/sesion', (req, res) => {
 app.post('/login', loginRateLimit, async (req, res) => {
   try {
     const { usuario, password } = req.body;
-    if (!usuario || !password) {
+    const usuarioLimpio = typeof usuario === 'string' ? usuario.trim() : '';
+    if (!usuarioLimpio || typeof password !== 'string' || !password) {
       return res.status(400).json({ error: 'Usuario y contraseña son requeridos.' });
     }
 
     const result = await pool.query(
       'SELECT id, nombre, usuario, password, rol, activo FROM usuarios WHERE usuario = $1 AND activo = true',
-      [usuario.trim()]
+      [usuarioLimpio]
     );
 
     const user = result.rows[0];
@@ -410,6 +423,7 @@ app.post('/impresoras', requireAuth, requireRoles('administrador', 'supervisor')
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
       [nombre.trim(), modelo?.trim() || null, ubicacion.trim(), estado, contador_actual ?? 0]
     );
+    res.locals.auditoriaDetalle = { id: result.rows[0].id, nombre: result.rows[0].nombre };
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error creando impresora:', error);
@@ -442,6 +456,7 @@ app.put('/impresoras/:id', requireAuth, requireRoles('administrador', 'superviso
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Impresora no encontrada' });
     }
+    res.locals.auditoriaDetalle = { id: result.rows[0].id, nombre: result.rows[0].nombre };
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error actualizando impresora:', error);
@@ -455,6 +470,7 @@ app.delete('/impresoras/:id', requireAuth, requireRoles('administrador'), async 
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Impresora no encontrada' });
     }
+    res.locals.auditoriaDetalle = { id: Number(req.params.id) };
     res.status(204).send();
   } catch (error) {
     console.error('Error eliminando impresora:', error);
@@ -518,11 +534,17 @@ app.post('/suministros', requireAuth, requireRoles('administrador', 'supervisor'
       return res.status(400).json({ error: 'Stock máximo debe ser >= stock mínimo' });
     }
 
+    const validacionFecha = validarFecha(fecha_ingreso, 'Fecha de ingreso');
+    if (!validacionFecha.valido) {
+      return res.status(400).json({ error: validacionFecha.mensaje });
+    }
+
     const result = await pool.query(
       `INSERT INTO suministros (nombre, tipo, cantidad, stock_minimo, stock_maximo, codigo, proveedor, fecha_ingreso)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
       [nombre.trim(), tipo, cantidad ?? 0, stock_minimo ?? 0, stock_maximo ?? null, codigo.trim(), proveedor?.trim() || null, fecha_ingreso]
     );
+    res.locals.auditoriaDetalle = { id: result.rows[0].id, codigo: result.rows[0].codigo };
     res.status(201).json(result.rows[0]);
   } catch (error) {
     if (error.code === '23505') {
@@ -564,6 +586,11 @@ app.put('/suministros/:id', requireAuth, requireRoles('administrador', 'supervis
       return res.status(400).json({ error: 'Stock máximo debe ser >= stock mínimo' });
     }
 
+    const validacionFecha = validarFecha(fecha_ingreso, 'Fecha de ingreso');
+    if (!validacionFecha.valido) {
+      return res.status(400).json({ error: validacionFecha.mensaje });
+    }
+
     const result = await pool.query(
       `UPDATE suministros SET nombre=$1, tipo=$2, cantidad=$3, stock_minimo=$4, stock_maximo=$5, codigo=$6, proveedor=$7, fecha_ingreso=$8
        WHERE id=$9 RETURNING *`,
@@ -572,6 +599,7 @@ app.put('/suministros/:id', requireAuth, requireRoles('administrador', 'supervis
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Suministro no encontrado' });
     }
+    res.locals.auditoriaDetalle = { id: result.rows[0].id, codigo: result.rows[0].codigo };
     res.json(result.rows[0]);
   } catch (error) {
     if (error.code === '23505') {
@@ -588,6 +616,7 @@ app.delete('/suministros/:id', requireAuth, requireRoles('administrador'), async
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Suministro no encontrado' });
     }
+    res.locals.auditoriaDetalle = { id: Number(req.params.id) };
     res.status(204).send();
   } catch (error) {
     console.error('Error eliminando suministro:', error);
@@ -612,19 +641,25 @@ app.post('/suministros/:id/movimiento', requireAuth, requireRoles('administrador
 
     await client.query('BEGIN');
 
-    const stockResult = await client.query('SELECT cantidad FROM suministros WHERE id = $1 FOR UPDATE', [suministroId]);
+    const stockResult = await client.query('SELECT cantidad, stock_maximo FROM suministros WHERE id = $1 FOR UPDATE', [suministroId]);
     if (stockResult.rows.length === 0) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Suministro no encontrado' });
     }
 
     const stockActual = stockResult.rows[0].cantidad;
+    const stockMaximo = stockResult.rows[0].stock_maximo;
     const delta = tipo_movimiento === 'entrada' ? Number(cantidad) : -Number(cantidad);
     const nuevoStock = stockActual + delta;
 
     if (nuevoStock < 0) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Stock insuficiente para esta salida' });
+    }
+
+    if (tipo_movimiento === 'entrada' && stockMaximo != null && nuevoStock > stockMaximo) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: `La entrada supera el stock máximo configurado (${stockMaximo})` });
     }
 
     await client.query('UPDATE suministros SET cantidad = $1 WHERE id = $2', [nuevoStock, suministroId]);
@@ -635,6 +670,7 @@ app.post('/suministros/:id/movimiento', requireAuth, requireRoles('administrador
     );
 
     await client.query('COMMIT');
+    res.locals.auditoriaDetalle = { id: Number(suministroId), tipo_movimiento, cantidad, cantidad_actual: nuevoStock };
     res.status(201).json({ movimiento: movResult.rows[0], cantidad_actual: nuevoStock });
   } catch (error) {
     await client.query('ROLLBACK');
@@ -706,6 +742,10 @@ app.post('/mantenimientos', requireAuth, requireRoles('administrador', 'supervis
     if (!impresora_id || !tecnico_usuario_id || !fecha || !estado || !descripcion?.trim()) {
       return res.status(400).json({ error: 'Campos obligatorios incompletos' });
     }
+    const validacionFecha = validarFecha(fecha);
+    if (!validacionFecha.valido) {
+      return res.status(400).json({ error: validacionFecha.mensaje });
+    }
     const validacionTecnico = validarNumeroEnteroFinito(tecnico_usuario_id, 'Técnico asignado');
     if (!validacionTecnico.valido) return res.status(400).json({ error: validacionTecnico.mensaje });
     const tecnico = await obtenerTecnicoAsignable(tecnico_usuario_id);
@@ -727,6 +767,7 @@ app.post('/mantenimientos', requireAuth, requireRoles('administrador', 'supervis
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
       [impresora_id, tecnico.nombre, tecnico.id, fecha, estado, descripcion.trim(), solucion?.trim() || null]
     );
+    res.locals.auditoriaDetalle = { id: result.rows[0].id, impresora_id: result.rows[0].impresora_id };
     res.status(201).json(result.rows[0]);
   } catch (error) {
     if (error.code === '23503') {
@@ -742,6 +783,10 @@ app.put('/mantenimientos/:id', requireAuth, requireRoles('administrador', 'super
     const { impresora_id, tecnico_usuario_id, fecha, estado, descripcion, solucion } = req.body;
     if (!impresora_id || !tecnico_usuario_id || !fecha || !estado || !descripcion?.trim()) {
       return res.status(400).json({ error: 'Campos obligatorios incompletos' });
+    }
+    const validacionFecha = validarFecha(fecha);
+    if (!validacionFecha.valido) {
+      return res.status(400).json({ error: validacionFecha.mensaje });
     }
     const validacionTecnico = validarNumeroEnteroFinito(tecnico_usuario_id, 'Técnico asignado');
     if (!validacionTecnico.valido) return res.status(400).json({ error: validacionTecnico.mensaje });
@@ -767,6 +812,7 @@ app.put('/mantenimientos/:id', requireAuth, requireRoles('administrador', 'super
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Mantenimiento no encontrado' });
     }
+    res.locals.auditoriaDetalle = { id: result.rows[0].id, impresora_id: result.rows[0].impresora_id };
     res.json(result.rows[0]);
   } catch (error) {
     if (error.code === '23503') {
@@ -801,6 +847,10 @@ app.post('/registros', requireAuth, requireRoles('administrador', 'supervisor', 
     if (!impresora_id || !fecha || contador_diario === undefined) {
       return res.status(400).json({ error: 'Impresora, fecha y contador son obligatorios' });
     }
+    const validacionFecha = validarFecha(fecha);
+    if (!validacionFecha.valido) {
+      return res.status(400).json({ error: validacionFecha.mensaje });
+    }
     const validacionImpresora = validarNumeroEnteroFinito(impresora_id, 'Impresora', false, false);
     if (!validacionImpresora.valido) {
       return res.status(400).json({ error: validacionImpresora.mensaje });
@@ -825,6 +875,7 @@ app.post('/registros', requireAuth, requireRoles('administrador', 'supervisor', 
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
       [impresora_id, fecha, contador_diario, recarga_papel ?? 0, cambio_toner ?? false, tecnico_recarga?.trim() || null, req.session.usuario_id]
     );
+    res.locals.auditoriaDetalle = { id: result.rows[0].id, impresora_id, fecha };
     res.status(201).json(result.rows[0]);
   } catch (error) {
     if (error.code === '23505') {
@@ -956,6 +1007,7 @@ app.post('/usuarios', requireAuth, requireRoles('administrador'), async (req, re
       'INSERT INTO usuarios (nombre, usuario, password, rol, activo) VALUES ($1, $2, $3, $4, $5) RETURNING id, nombre, usuario, rol, activo, creado_en',
       [nombre.trim(), usuario.trim(), await bcrypt.hash(password, 12), normalizarRol(rol), activo !== false]
     );
+    res.locals.auditoriaDetalle = { id: result.rows[0].id, usuario: result.rows[0].usuario, rol: result.rows[0].rol };
     res.status(201).json(result.rows[0]);
   } catch (error) {
     if (error.code === '23505') {
@@ -993,6 +1045,7 @@ app.put('/usuarios/:id', requireAuth, requireRoles('administrador'), async (req,
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
+    res.locals.auditoriaDetalle = { id: result.rows[0].id, usuario: result.rows[0].usuario, rol: result.rows[0].rol };
     res.json(result.rows[0]);
   } catch (error) {
     if (error.code === '23505') {
@@ -1012,6 +1065,7 @@ app.delete('/usuarios/:id', requireAuth, requireRoles('administrador'), async (r
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
+    res.locals.auditoriaDetalle = { id: Number(req.params.id) };
     res.status(204).send();
   } catch (error) {
     console.error('Error eliminando usuario:', error);
@@ -1060,6 +1114,7 @@ app.post('/alertas', requireAuth, requireRoles('administrador', 'supervisor'), a
        VALUES ($1, $2, $3, $4, $5, true) RETURNING *`,
       [tipo, gravedad, titulo.trim(), descripcion?.trim() || null, referencia_id != null && Number.isInteger(Number(referencia_id)) ? Number(referencia_id) : null]
     );
+    res.locals.auditoriaDetalle = { id: result.rows[0].id, tipo, gravedad, titulo: result.rows[0].titulo };
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error creando alerta:', error);
@@ -1073,6 +1128,7 @@ app.delete('/alertas/:id', requireAuth, requireRoles('administrador', 'superviso
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Alerta no encontrada' });
     }
+    res.locals.auditoriaDetalle = { id: Number(req.params.id) };
     res.status(204).send();
   } catch (error) {
     console.error('Error cerrando alerta:', error);

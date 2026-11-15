@@ -12,7 +12,7 @@
     "stop": "node stop-server.js",
     "restart": "node stop-server.js && node index.js",
     "pretest": "node pretest.js",
-    "test": "node --test --test-concurrency=1 test/smoke.test.js test/auth_roles.test.js test/inventory.test.js test/records_reports_audit.test.js test/printers_maintenance_alerts.test.js"
+    "test": "node --test --test-concurrency=1 test/smoke.test.js test/auth_roles.test.js test/inventory.test.js test/records_reports_audit.test.js test/printers_maintenance_alerts.test.js test/plan_cases.test.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

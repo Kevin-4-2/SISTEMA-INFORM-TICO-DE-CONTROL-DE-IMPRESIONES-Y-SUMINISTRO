@@ -133,6 +133,11 @@ async function migrarBaseDeDatos() {
       }
     }
 
+    // La asignación nueva usa usuarios reales; los mantenimientos antiguos conservan su texto.
+    await client.query(`ALTER TABLE mantenimientos
+      ADD COLUMN IF NOT EXISTS tecnico_usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL`);
+    await client.query('CREATE INDEX IF NOT EXISTS idx_mantenimientos_tecnico_usuario ON mantenimientos(tecnico_usuario_id)');
+
     // Bitácora inmutable de acciones críticas.
     await client.query(`
       CREATE TABLE IF NOT EXISTS auditoria (

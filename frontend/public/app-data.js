@@ -1343,7 +1343,7 @@ async function verDetalleMantenimiento(id) {
 
 async function abrirModalMantenimiento(id) {
   editandoMantenimientoId = id || null;
-  let datos = { impresora_id: '', tecnico: '', fecha: hoyISO(), estado: 'pendiente', descripcion: '', solucion: '' };
+  let datos = { impresora_id: '', tecnico_usuario_id: null, fecha: hoyISO(), estado: 'pendiente', descripcion: '', solucion: '' };
   if (id) {
     try {
       datos = await fetchAPI(`/mantenimientos/${id}`);
@@ -1352,6 +1352,14 @@ async function abrirModalMantenimiento(id) {
       return;
     }
   }
+  let tecnicos;
+  try {
+    tecnicos = await fetchAPI('/tecnicos');
+  } catch (err) {
+    mostrarMensaje(err.message, true);
+    return;
+  }
+  const asignadoDisponible = tecnicos.some(t => String(t.id) === String(datos.tecnico_usuario_id));
   document.getElementById('modal-form-titulo').textContent = id ? 'Editar mantenimiento' : 'Nuevo mantenimiento';
   document.getElementById('modal-form-contenido').innerHTML = `
     <form id="form-mantenimiento" onsubmit="event.preventDefault(); guardarMantenimiento();" class="formulario">
@@ -1361,7 +1369,12 @@ async function abrirModalMantenimiento(id) {
       </div>
       <div class="form-card-group">
         <label for="mant-tecnico">Técnico asignado *</label>
-        <input type="text" id="mant-tecnico" value="${datos.tecnico}" required/>
+        <select id="mant-tecnico" required>
+          <option value="">Selecciona un técnico</option>
+          ${tecnicos.map(t => `<option value="${t.id}">${escaparHTML(t.nombre)} (${escaparHTML(t.usuario)})</option>`).join('')}
+        </select>
+        ${datos.tecnico && !asignadoDisponible ? `<small>Asignación anterior: ${escaparHTML(datos.tecnico)}. Selecciona un técnico activo para actualizarla.</small>` : ''}
+        ${!tecnicos.length ? '<small>No hay técnicos activos. Crea o activa un usuario técnico antes de asignar este mantenimiento.</small>' : ''}
       </div>
       <div class="form-card-group">
         <label for="mant-fecha">Fecha *</label>
@@ -1385,18 +1398,19 @@ async function abrirModalMantenimiento(id) {
       </div>
       <div class="modal-actions">
         <button type="button" class="btn-secundario" onclick="cerrarModal('modal-formulario')">Cancelar</button>
-        <button type="submit" class="btn-principal">Guardar</button>
+        <button type="submit" class="btn-principal" ${!tecnicos.length ? 'disabled' : ''}>Guardar</button>
       </div>
     </form>`;
   abrirModal('modal-formulario');
   await cargarImpresorasParaSelect('mant-impresora');
   if (datos.impresora_id) document.getElementById('mant-impresora').value = datos.impresora_id;
+  if (asignadoDisponible) document.getElementById('mant-tecnico').value = String(datos.tecnico_usuario_id);
 }
 
 async function guardarMantenimiento() {
   const body = {
     impresora_id: Number(document.getElementById('mant-impresora').value),
-    tecnico: document.getElementById('mant-tecnico').value,
+    tecnico_usuario_id: Number(document.getElementById('mant-tecnico').value),
     fecha: document.getElementById('mant-fecha').value,
     estado: document.getElementById('mant-estado').value,
     descripcion: document.getElementById('mant-descripcion').value,

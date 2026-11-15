@@ -46,6 +46,7 @@ const STATEMENTS = [
     id SERIAL PRIMARY KEY,
     impresora_id INTEGER NOT NULL REFERENCES impresoras(id) ON DELETE CASCADE,
     tecnico VARCHAR(255) NOT NULL,
+    tecnico_usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
     fecha DATE NOT NULL,
     estado VARCHAR(50) NOT NULL DEFAULT 'pendiente'
         CHECK (estado IN ('pendiente', 'en proceso', 'finalizado')),

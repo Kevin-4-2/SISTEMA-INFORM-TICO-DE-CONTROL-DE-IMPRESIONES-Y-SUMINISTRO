@@ -647,6 +647,26 @@ app.post('/suministros/:id/movimiento', requireAuth, requireRoles('administrador
 
 // --- MANTENIMIENTOS ---
 
+app.get('/tecnicos', requireAuth, requireRoles('administrador', 'supervisor', 'tecnico'), async (_req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, nombre, usuario FROM usuarios WHERE rol = 'tecnico' AND activo = true ORDER BY nombre, id"
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error listando técnicos:', error);
+    res.status(500).json({ error: 'Error interno' });
+  }
+});
+
+async function obtenerTecnicoAsignable(id) {
+  const result = await pool.query(
+    "SELECT id, nombre FROM usuarios WHERE id = $1 AND rol = 'tecnico' AND activo = true",
+    [id]
+  );
+  return result.rows[0];
+}
+
 app.get('/mantenimientos', requireAuth, requireRoles('administrador', 'supervisor', 'tecnico'), async (req, res) => {
   try {
     const result = await pool.query(`
@@ -682,10 +702,14 @@ app.get('/mantenimientos/:id', requireAuth, requireRoles('administrador', 'super
 
 app.post('/mantenimientos', requireAuth, requireRoles('administrador', 'supervisor', 'tecnico'), async (req, res) => {
   try {
-    const { impresora_id, tecnico, fecha, estado, descripcion, solucion } = req.body;
-    if (!impresora_id || !tecnico?.trim() || !fecha || !estado || !descripcion?.trim()) {
+    const { impresora_id, tecnico_usuario_id, fecha, estado, descripcion, solucion } = req.body;
+    if (!impresora_id || !tecnico_usuario_id || !fecha || !estado || !descripcion?.trim()) {
       return res.status(400).json({ error: 'Campos obligatorios incompletos' });
     }
+    const validacionTecnico = validarNumeroEnteroFinito(tecnico_usuario_id, 'Técnico asignado');
+    if (!validacionTecnico.valido) return res.status(400).json({ error: validacionTecnico.mensaje });
+    const tecnico = await obtenerTecnicoAsignable(tecnico_usuario_id);
+    if (!tecnico) return res.status(400).json({ error: 'Seleccione un técnico activo registrado' });
     const validacionEstado = validarEnum(estado, ESTADOS_MANTENIMIENTO, 'Estado');
     if (!validacionEstado.valido) {
       return res.status(400).json({ error: validacionEstado.mensaje });
@@ -699,9 +723,9 @@ app.post('/mantenimientos', requireAuth, requireRoles('administrador', 'supervis
       return res.status(400).json({ error: 'Impresora no existe' });
     }
     const result = await pool.query(
-      `INSERT INTO mantenimientos (impresora_id, tecnico, fecha, estado, descripcion, solucion)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [impresora_id, tecnico.trim(), fecha, estado, descripcion.trim(), solucion?.trim() || null]
+      `INSERT INTO mantenimientos (impresora_id, tecnico, tecnico_usuario_id, fecha, estado, descripcion, solucion)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [impresora_id, tecnico.nombre, tecnico.id, fecha, estado, descripcion.trim(), solucion?.trim() || null]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -715,10 +739,14 @@ app.post('/mantenimientos', requireAuth, requireRoles('administrador', 'supervis
 
 app.put('/mantenimientos/:id', requireAuth, requireRoles('administrador', 'supervisor', 'tecnico'), async (req, res) => {
   try {
-    const { impresora_id, tecnico, fecha, estado, descripcion, solucion } = req.body;
-    if (!impresora_id || !tecnico?.trim() || !fecha || !estado || !descripcion?.trim()) {
+    const { impresora_id, tecnico_usuario_id, fecha, estado, descripcion, solucion } = req.body;
+    if (!impresora_id || !tecnico_usuario_id || !fecha || !estado || !descripcion?.trim()) {
       return res.status(400).json({ error: 'Campos obligatorios incompletos' });
     }
+    const validacionTecnico = validarNumeroEnteroFinito(tecnico_usuario_id, 'Técnico asignado');
+    if (!validacionTecnico.valido) return res.status(400).json({ error: validacionTecnico.mensaje });
+    const tecnico = await obtenerTecnicoAsignable(tecnico_usuario_id);
+    if (!tecnico) return res.status(400).json({ error: 'Seleccione un técnico activo registrado' });
     const validacionEstado = validarEnum(estado, ESTADOS_MANTENIMIENTO, 'Estado');
     if (!validacionEstado.valido) {
       return res.status(400).json({ error: validacionEstado.mensaje });
@@ -732,9 +760,9 @@ app.put('/mantenimientos/:id', requireAuth, requireRoles('administrador', 'super
       return res.status(400).json({ error: 'Impresora no existe' });
     }
     const result = await pool.query(
-      `UPDATE mantenimientos SET impresora_id=$1, tecnico=$2, fecha=$3, estado=$4, descripcion=$5, solucion=$6
-       WHERE id=$7 RETURNING *`,
-      [impresora_id, tecnico.trim(), fecha, estado, descripcion.trim(), solucion?.trim() || null, req.params.id]
+      `UPDATE mantenimientos SET impresora_id=$1, tecnico=$2, tecnico_usuario_id=$3, fecha=$4, estado=$5, descripcion=$6, solucion=$7
+       WHERE id=$8 RETURNING *`,
+      [impresora_id, tecnico.nombre, tecnico.id, fecha, estado, descripcion.trim(), solucion?.trim() || null, req.params.id]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Mantenimiento no encontrado' });

@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 
 let server;
 let printerId;
+let technicianId;
 
 async function login(usuario, password, ip) {
   const res = await server.fetch('/login', {
@@ -35,6 +36,11 @@ describe('Impresoras, mantenimientos y alertas', () => {
     const printers = await response.json();
     assert.ok(printers.length > 0, 'QA requiere una impresora');
     printerId = printers[0].id;
+    const techniciansResponse = await authFetch('/tecnicos', 'GET', cookie);
+    assert.strictEqual(techniciansResponse.status, 200);
+    const technicians = await techniciansResponse.json();
+    assert.ok(technicians.length > 0, 'QA requiere un técnico activo');
+    technicianId = technicians[0].id;
   });
 
   after(async () => {
@@ -127,16 +133,19 @@ describe('Impresoras, mantenimientos y alertas', () => {
     const { cookie } = await login('carlos', 'carlos123', '10.0.30.8');
     const res = await authFetch('/mantenimientos', 'POST', cookie, {
       impresora_id: printerId,
-      tecnico: 'Juan Técnico',
+      tecnico_usuario_id: technicianId,
       fecha: '2025-06-01',
       estado: 'pendiente',
       descripcion: 'Mantenimiento QA'
     });
     assert.strictEqual(res.status, 201, `Expected 201, got ${res.status}`);
+    const created = await res.json();
+    assert.strictEqual(created.tecnico_usuario_id, technicianId);
+    assert.ok(created.tecnico);
 
     const badImp = await authFetch('/mantenimientos', 'POST', cookie, {
       impresora_id: 99999,
-      tecnico: 'Juan Técnico',
+      tecnico_usuario_id: technicianId,
       fecha: '2025-06-01',
       estado: 'pendiente',
       descripcion: 'QA'
@@ -145,7 +154,7 @@ describe('Impresoras, mantenimientos y alertas', () => {
 
     const badEst = await authFetch('/mantenimientos', 'POST', cookie, {
       impresora_id: printerId,
-      tecnico: 'Juan Técnico',
+      tecnico_usuario_id: technicianId,
       fecha: '2025-06-01',
       estado: 'explodido',
       descripcion: 'QA'
@@ -157,7 +166,7 @@ describe('Impresoras, mantenimientos y alertas', () => {
     const { cookie } = await login('carlos', 'carlos123', '10.0.30.9');
     const createRes = await authFetch('/mantenimientos', 'POST', cookie, {
       impresora_id: printerId,
-      tecnico: 'Juan Técnico',
+      tecnico_usuario_id: technicianId,
       fecha: '2025-06-01',
       estado: 'pendiente',
       descripcion: 'QA Mantenimiento'
@@ -167,13 +176,52 @@ describe('Impresoras, mantenimientos y alertas', () => {
 
     const putRes = await authFetch(`/mantenimientos/${creado.id}`, 'PUT', cookie, {
       impresora_id: printerId,
-      tecnico: 'Juan Técnico Actualizado',
+      tecnico_usuario_id: technicianId,
       fecha: '2025-06-02',
       estado: 'finalizado',
       descripcion: 'QA Mantenimiento Finalizado',
       solucion: 'Se reparó'
     });
     assert.strictEqual(putRes.status, 200, `Expected 200, got ${putRes.status}`);
+    assert.strictEqual((await putRes.json()).tecnico_usuario_id, technicianId);
+
+    const invalidAssignment = await authFetch(`/mantenimientos/${creado.id}`, 'PUT', cookie, {
+      impresora_id: printerId,
+      tecnico_usuario_id: 999999,
+      fecha: '2025-06-02',
+      estado: 'finalizado',
+      descripcion: 'QA Mantenimiento Finalizado'
+    });
+    assert.strictEqual(invalidAssignment.status, 400);
+  });
+
+  test('La lista y la asignación solo aceptan técnicos activos', async () => {
+    const { cookie: adminCookie } = await login('admin', 'admin123', '10.0.30.31');
+    const { cookie: supervisorCookie } = await login('carlos', 'carlos123', '10.0.30.32');
+    const { cookie: operatorCookie } = await login('maria', 'maria123', '10.0.30.33');
+    assert.strictEqual((await authFetch('/tecnicos', 'GET', operatorCookie)).status, 403);
+
+    const usersResponse = await authFetch('/usuarios', 'GET', adminCookie);
+    assert.strictEqual(usersResponse.status, 200);
+    const operatorId = (await usersResponse.json()).find(u => u.rol === 'operario').id;
+    const body = { impresora_id: printerId, fecha: '2025-06-03', estado: 'pendiente', descripcion: 'QA asignación' };
+    for (const invalidId of [operatorId, 999999]) {
+      const response = await authFetch('/mantenimientos', 'POST', supervisorCookie,
+        { ...body, tecnico_usuario_id: invalidId });
+      assert.strictEqual(response.status, 400);
+    }
+
+    const inactiveResponse = await authFetch('/usuarios', 'POST', adminCookie, {
+      nombre: 'QA técnico inactivo', usuario: `qa_inactivo_${Date.now()}`,
+      password: 'QaPassword123', rol: 'tecnico', activo: false
+    });
+    assert.strictEqual(inactiveResponse.status, 201);
+    const inactiveId = (await inactiveResponse.json()).id;
+    const technicians = await (await authFetch('/tecnicos', 'GET', supervisorCookie)).json();
+    assert.ok(!technicians.some(t => t.id === inactiveId));
+    const rejected = await authFetch('/mantenimientos', 'POST', supervisorCookie,
+      { ...body, tecnico_usuario_id: inactiveId });
+    assert.strictEqual(rejected.status, 400);
   });
 
   test('POST /alertas válido => 201; tipo/gravedad inválido => 400; operario => 403', async () => {

@@ -5,12 +5,14 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "init-db": "node -e \"import('./db-init.js').then(m => m.initializeDatabase())\"",
+    "init-db": "node -e \"import('./db-init.js').then(m => m.initializeDatabase()).then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1) })\"",
     "migrate": "node migrate.js",
     "seed": "node seed.js",
     "reset": "node reset-database.js",
     "stop": "node stop-server.js",
-    "restart": "node stop-server.js && node index.js"
+    "restart": "node stop-server.js && node index.js",
+    "pretest": "node pretest.js",
+    "test": "node --test --test-concurrency=1 test/smoke.test.js test/auth_roles.test.js test/inventory.test.js test/records_reports_audit.test.js test/printers_maintenance_alerts.test.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

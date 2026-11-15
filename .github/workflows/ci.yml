@@ -1,42 +1,118 @@
-name: SICIS CI
+name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
+    branches: [main, develop]
 
 jobs:
-  frontend:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-      - run: npm ci --ignore-scripts
-      - run: node --check public/app-data.js
-      - run: npm run build
-      - run: npm audit --omit=dev --audit-level=high
-
   backend:
+    name: Backend Tests
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sicisqa
+          POSTGRES_PASSWORD: sicisqa
+          POSTGRES_DB: sicis_qa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U sicisqa -d sicis_qa"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      # For the test helper (_server.js)
+      SICIS_QA_DB_HOST: 127.0.0.1
+      SICIS_QA_DB_PORT: 5432
+      SICIS_QA_DB_NAME: sicis_qa
+      SICIS_QA_DB_USER: sicisqa
+      SICIS_QA_DB_PASSWORD: sicisqa
+      # For init-db/migrate/test steps
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_NAME: sicis_qa
+      DB_USER: sicisqa
+      DB_PASSWORD: sicisqa
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 24
-          cache: npm
+          node-version: '24'
+          cache: 'npm'
           cache-dependency-path: backend/package-lock.json
-      - run: npm ci --ignore-scripts
-      - run: node --check index.js
-      - run: node --check db-init.js
-      - run: node --check migrate.js
-      - run: npm audit --omit=dev --audit-level=high
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci --ignore-scripts
+
+      - name: Check backend syntax and dependencies
+        working-directory: ./backend
+        run: |
+          node --check index.js
+          node --check db-init.js
+          node --check migrate.js
+          npm audit --omit=dev --audit-level=high
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h 127.0.0.1 -p 5432 -U sicisqa -d sicis_qa; then
+              echo "PostgreSQL is ready"
+              exit 0
+            fi
+            echo "Waiting for PostgreSQL... ($i/30)"
+            sleep 2
+          done
+          echo "PostgreSQL did not become ready in time"
+          exit 1
+
+      - name: Initialize QA database
+        working-directory: ./backend
+        run: npm run init-db
+
+      - name: Run migrations on QA database
+        working-directory: ./backend
+        run: npm run migrate
+
+      - name: Run backend tests
+        working-directory: ./backend
+        run: npm test
+
+  frontend:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci --ignore-scripts
+
+      - name: Check frontend syntax
+        working-directory: ./frontend
+        run: node --check public/app-data.js
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Audit frontend dependencies
+        working-directory: ./frontend
+        run: npm audit --omit=dev --audit-level=high

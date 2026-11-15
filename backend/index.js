@@ -133,6 +133,20 @@ function validarNumeroEnteroFinito(valor, nombreCampo, permitirCero = false, obl
   return { valido: true, mensaje: null };
 }
 
+const ESTADOS_IMPRESORA = ['activa', 'inactiva', 'mantenimiento'];
+const TIPOS_SUMINISTRO = ['toner', 'papel', 'tinta', 'otro'];
+const ESTADOS_MANTENIMIENTO = ['pendiente', 'en proceso', 'finalizado'];
+
+function validarEnum(valor, valoresPermitidos, nombreCampo) {
+  if (valor === undefined || valor === null || valor === '') {
+    return { valido: false, mensaje: `${nombreCampo} es obligatorio` };
+  }
+  if (!valoresPermitidos.includes(valor)) {
+    return { valido: false, mensaje: `${nombreCampo} inválido; use: ${valoresPermitidos.join(', ')}` };
+  }
+  return { valido: true, mensaje: null };
+}
+
 function getClientIp(req) {
   return (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').toString().split(',')[0].trim().slice(0, 64);
 }
@@ -381,6 +395,11 @@ app.post('/impresoras', requireAuth, requireRoles('administrador', 'supervisor')
       return res.status(400).json({ error: 'Nombre, ubicación y estado son obligatorios' });
     }
 
+    const validacionEstado = validarEnum(estado, ESTADOS_IMPRESORA, 'Estado');
+    if (!validacionEstado.valido) {
+      return res.status(400).json({ error: validacionEstado.mensaje });
+    }
+
     const validacionContador = validarNumeroEnteroFinito(contador_actual, 'Contador actual', true, false);
     if (!validacionContador.valido) {
       return res.status(400).json({ error: validacionContador.mensaje });
@@ -403,6 +422,11 @@ app.put('/impresoras/:id', requireAuth, requireRoles('administrador', 'superviso
     const { nombre, modelo, ubicacion, estado, contador_actual } = req.body;
     if (!nombre?.trim() || !ubicacion?.trim() || !estado) {
       return res.status(400).json({ error: 'Nombre, ubicación y estado son obligatorios' });
+    }
+
+    const validacionEstado = validarEnum(estado, ESTADOS_IMPRESORA, 'Estado');
+    if (!validacionEstado.valido) {
+      return res.status(400).json({ error: validacionEstado.mensaje });
     }
 
     const validacionContador = validarNumeroEnteroFinito(contador_actual, 'Contador actual', true, false);
@@ -470,6 +494,11 @@ app.post('/suministros', requireAuth, requireRoles('administrador', 'supervisor'
       return res.status(400).json({ error: 'Campos obligatorios incompletos' });
     }
 
+    const validacionTipo = validarEnum(tipo, TIPOS_SUMINISTRO, 'Tipo');
+    if (!validacionTipo.valido) {
+      return res.status(400).json({ error: validacionTipo.mensaje });
+    }
+
     const validacionCantidad = validarNumeroEnteroFinito(cantidad, 'Cantidad', false, false);
     if (!validacionCantidad.valido) {
       return res.status(400).json({ error: validacionCantidad.mensaje });
@@ -509,6 +538,11 @@ app.put('/suministros/:id', requireAuth, requireRoles('administrador', 'supervis
     const { nombre, tipo, cantidad, stock_minimo, stock_maximo, codigo, proveedor, fecha_ingreso } = req.body;
     if (!nombre?.trim() || !tipo || !codigo?.trim() || !fecha_ingreso) {
       return res.status(400).json({ error: 'Campos obligatorios incompletos' });
+    }
+
+    const validacionTipo = validarEnum(tipo, TIPOS_SUMINISTRO, 'Tipo');
+    if (!validacionTipo.valido) {
+      return res.status(400).json({ error: validacionTipo.mensaje });
     }
 
     const validacionCantidad = validarNumeroEnteroFinito(cantidad, 'Cantidad', false, false);
@@ -652,6 +686,10 @@ app.post('/mantenimientos', requireAuth, requireRoles('administrador', 'supervis
     if (!impresora_id || !tecnico?.trim() || !fecha || !estado || !descripcion?.trim()) {
       return res.status(400).json({ error: 'Campos obligatorios incompletos' });
     }
+    const validacionEstado = validarEnum(estado, ESTADOS_MANTENIMIENTO, 'Estado');
+    if (!validacionEstado.valido) {
+      return res.status(400).json({ error: validacionEstado.mensaje });
+    }
     const validacionImpresora = validarNumeroEnteroFinito(impresora_id, 'Impresora', false, false);
     if (!validacionImpresora.valido) {
       return res.status(400).json({ error: validacionImpresora.mensaje });
@@ -680,6 +718,10 @@ app.put('/mantenimientos/:id', requireAuth, requireRoles('administrador', 'super
     const { impresora_id, tecnico, fecha, estado, descripcion, solucion } = req.body;
     if (!impresora_id || !tecnico?.trim() || !fecha || !estado || !descripcion?.trim()) {
       return res.status(400).json({ error: 'Campos obligatorios incompletos' });
+    }
+    const validacionEstado = validarEnum(estado, ESTADOS_MANTENIMIENTO, 'Estado');
+    if (!validacionEstado.valido) {
+      return res.status(400).json({ error: validacionEstado.mensaje });
     }
     const validacionImpresora = validarNumeroEnteroFinito(impresora_id, 'Impresora', false, false);
     if (!validacionImpresora.valido) {

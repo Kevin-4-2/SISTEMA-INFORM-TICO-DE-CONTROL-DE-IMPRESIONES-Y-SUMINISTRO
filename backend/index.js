@@ -370,7 +370,7 @@ app.get('/impresoras/:id', requireAuth, requireRoles('administrador', 'superviso
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error obteniendo impresora:', error);
-    res.status(500).json({ error: error.message || 'Error interno' });
+    res.status(500).json({ error: 'Error interno' });
   }
 });
 
@@ -394,7 +394,7 @@ app.post('/impresoras', requireAuth, requireRoles('administrador', 'supervisor')
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error creando impresora:', error);
-    res.status(500).json({ error: error.message || 'Error interno' });
+    res.status(500).json({ error: 'Error interno' });
   }
 });
 
@@ -421,7 +421,7 @@ app.put('/impresoras/:id', requireAuth, requireRoles('administrador', 'superviso
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error actualizando impresora:', error);
-    res.status(500).json({ error: error.message || 'Error interno' });
+    res.status(500).json({ error: 'Error interno' });
   }
 });
 
@@ -434,7 +434,7 @@ app.delete('/impresoras/:id', requireAuth, requireRoles('administrador'), async 
     res.status(204).send();
   } catch (error) {
     console.error('Error eliminando impresora:', error);
-    res.status(500).json({ error: error.message || 'Error interno' });
+    res.status(500).json({ error: 'Error interno' });
   }
 });
 
@@ -446,7 +446,7 @@ app.get('/suministros', requireAuth, requireRoles('administrador', 'supervisor',
     res.json(result.rows);
   } catch (error) {
     console.error('Error listando suministros:', error);
-    res.status(500).json({ error: error.message || 'Error interno' });
+    res.status(500).json({ error: 'Error interno' });
   }
 });
 
@@ -459,7 +459,7 @@ app.get('/suministros/:id', requireAuth, requireRoles('administrador', 'supervis
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error obteniendo suministro:', error);
-    res.status(500).json({ error: error.message || 'Error interno' });
+    res.status(500).json({ error: 'Error interno' });
   }
 });
 
@@ -500,7 +500,7 @@ app.post('/suministros', requireAuth, requireRoles('administrador', 'supervisor'
       return res.status(400).json({ error: 'El código ya existe' });
     }
     console.error('Error creando suministro:', error);
-    res.status(500).json({ error: error.message || 'Error interno' });
+    res.status(500).json({ error: 'Error interno' });
   }
 });
 
@@ -544,7 +544,7 @@ app.put('/suministros/:id', requireAuth, requireRoles('administrador', 'supervis
       return res.status(400).json({ error: 'El código ya existe' });
     }
     console.error('Error actualizando suministro:', error);
-    res.status(500).json({ error: error.message || 'Error interno' });
+    res.status(500).json({ error: 'Error interno' });
   }
 });
 
@@ -557,7 +557,7 @@ app.delete('/suministros/:id', requireAuth, requireRoles('administrador'), async
     res.status(204).send();
   } catch (error) {
     console.error('Error eliminando suministro:', error);
-    res.status(500).json({ error: error.message || 'Error interno' });
+    res.status(500).json({ error: 'Error interno' });
   }
 });
 

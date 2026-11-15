@@ -17,7 +17,7 @@
         </div>
       </div>
 
-      <form class="login-panel" id="sicis-login" autocomplete="on" novalidate>
+      <form class="login-panel" id="sicis-login" method="post" action="/login" autocomplete="on" novalidate>
         <div class="panel-index">ACCESO / SICIS</div>
         <h2>Bienvenido de nuevo</h2>
         <p>Ingresa con tu cuenta institucional.</p>
@@ -28,7 +28,7 @@
           <span class="field"><i>◌</i><input id="password" name="password" type="password" autocomplete="current-password" required /></span>
         </label>
         <div class="login-options"><label><input id="recordarme" type="checkbox" /> Recordarme</label><span>Sesión protegida</span></div>
-        <button class="launch-button" type="submit"><span>Entrar al sistema</span><i>↗</i><b></b></button>
+        <button class="launch-button" type="submit" disabled><span>Entrar al sistema</span><i>↗</i><b></b></button>
         <small id="login-feedback" role="status" aria-live="polite">Usa tus credenciales de SICIS</small>
       </form>
 

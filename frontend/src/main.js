@@ -910,6 +910,9 @@ window.sicisNavigateStation = navigateStation;
 
 const dataScript = document.createElement("script");
 dataScript.src = "/app-data.js";
-dataScript.addEventListener("load", () => window.sicisBootstrap?.());
+dataScript.addEventListener("load", () => {
+  document.querySelector(".launch-button").disabled = false;
+  window.sicisBootstrap?.();
+});
 dataScript.addEventListener("error", () => showToast("No se pudo cargar la lógica de datos de SICIS."));
 document.body.appendChild(dataScript);

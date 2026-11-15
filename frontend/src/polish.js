@@ -8,6 +8,7 @@ import "@fontsource/space-grotesk/600.css";
 import "@fontsource/space-grotesk/700.css";
 import "./polish.css";
 import "./button-refinement.css";
+import "./responsive.css";
 
 const navFooter = document.querySelector(".nav-footer");
 const motionButton = document.querySelector("#motion-toggle");

@@ -108,6 +108,31 @@ function validarPassword(password) {
     /[a-z]/.test(password) && /[A-Z]/.test(password) && /\d/.test(password);
 }
 
+function validarNumeroEnteroFinito(valor, nombreCampo, permitirCero = false, obligatorio = true) {
+  if (obligatorio && (valor === undefined || valor === null || valor === '')) {
+    return { valido: false, mensaje: `${nombreCampo} es obligatorio` };
+  }
+  if (!obligatorio && (valor === undefined || valor === null || valor === '')) {
+    return { valido: true, mensaje: null };
+  }
+  if (typeof valor !== 'number' || isNaN(valor) || !isFinite(valor)) {
+    return { valido: false, mensaje: `${nombreCampo} debe ser un número entero finito válido` };
+  }
+  if (!Number.isInteger(valor)) {
+    return { valido: false, mensaje: `${nombreCampo} debe ser un número entero` };
+  }
+  if (valor < 0) {
+    return { valido: false, mensaje: `${nombreCampo} no puede ser negativo` };
+  }
+  if (!permitirCero && valor === 0) {
+    return { valido: false, mensaje: `${nombreCampo} debe ser mayor que 0` };
+  }
+  if (permitirCero && valor === 0) {
+    return { valido: true, mensaje: null };
+  }
+  return { valido: true, mensaje: null };
+}
+
 function getClientIp(req) {
   return (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').toString().split(',')[0].trim().slice(0, 64);
 }
@@ -351,16 +376,16 @@ app.get('/impresoras/:id', requireAuth, requireRoles('administrador', 'superviso
 
 app.post('/impresoras', requireAuth, requireRoles('administrador', 'supervisor'), async (req, res) => {
   try {
-    console.log('POST /impresoras - Body:', req.body);
-    console.log('POST /impresoras - Session:', req.session);
-    
     const { nombre, modelo, ubicacion, estado, contador_actual } = req.body;
     if (!nombre?.trim() || !ubicacion?.trim() || !estado) {
       return res.status(400).json({ error: 'Nombre, ubicación y estado son obligatorios' });
     }
-    if (contador_actual !== undefined && Number(contador_actual) < 0) {
-      return res.status(400).json({ error: 'Contador actual debe ser >= 0' });
+
+    const validacionContador = validarNumeroEnteroFinito(contador_actual, 'Contador actual', true, false);
+    if (!validacionContador.valido) {
+      return res.status(400).json({ error: validacionContador.mensaje });
     }
+
     const result = await pool.query(
       `INSERT INTO impresoras (nombre, modelo, ubicacion, estado, contador_actual)
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
@@ -379,6 +404,12 @@ app.put('/impresoras/:id', requireAuth, requireRoles('administrador', 'superviso
     if (!nombre?.trim() || !ubicacion?.trim() || !estado) {
       return res.status(400).json({ error: 'Nombre, ubicación y estado son obligatorios' });
     }
+
+    const validacionContador = validarNumeroEnteroFinito(contador_actual, 'Contador actual', true, false);
+    if (!validacionContador.valido) {
+      return res.status(400).json({ error: validacionContador.mensaje });
+    }
+
     const result = await pool.query(
       `UPDATE impresoras SET nombre=$1, modelo=$2, ubicacion=$3, estado=$4, contador_actual=$5
        WHERE id=$6 RETURNING *`,
@@ -438,9 +469,26 @@ app.post('/suministros', requireAuth, requireRoles('administrador', 'supervisor'
     if (!nombre?.trim() || !tipo || !codigo?.trim() || !fecha_ingreso) {
       return res.status(400).json({ error: 'Campos obligatorios incompletos' });
     }
+
+    const validacionCantidad = validarNumeroEnteroFinito(cantidad, 'Cantidad', false, false);
+    if (!validacionCantidad.valido) {
+      return res.status(400).json({ error: validacionCantidad.mensaje });
+    }
+
+    const validacionStockMinimo = validarNumeroEnteroFinito(stock_minimo, 'Stock mínimo', true, false);
+    if (!validacionStockMinimo.valido) {
+      return res.status(400).json({ error: validacionStockMinimo.mensaje });
+    }
+
+    const validacionStockMaximo = validarNumeroEnteroFinito(stock_maximo, 'Stock máximo', true, true);
+    if (!validacionStockMaximo.valido) {
+      return res.status(400).json({ error: validacionStockMaximo.mensaje });
+    }
+
     if (stock_maximo != null && Number(stock_maximo) < Number(stock_minimo ?? 0)) {
       return res.status(400).json({ error: 'Stock máximo debe ser >= stock mínimo' });
     }
+
     const result = await pool.query(
       `INSERT INTO suministros (nombre, tipo, cantidad, stock_minimo, stock_maximo, codigo, proveedor, fecha_ingreso)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
@@ -462,9 +510,26 @@ app.put('/suministros/:id', requireAuth, requireRoles('administrador', 'supervis
     if (!nombre?.trim() || !tipo || !codigo?.trim() || !fecha_ingreso) {
       return res.status(400).json({ error: 'Campos obligatorios incompletos' });
     }
+
+    const validacionCantidad = validarNumeroEnteroFinito(cantidad, 'Cantidad', false, false);
+    if (!validacionCantidad.valido) {
+      return res.status(400).json({ error: validacionCantidad.mensaje });
+    }
+
+    const validacionStockMinimo = validarNumeroEnteroFinito(stock_minimo, 'Stock mínimo', true, false);
+    if (!validacionStockMinimo.valido) {
+      return res.status(400).json({ error: validacionStockMinimo.mensaje });
+    }
+
+    const validacionStockMaximo = validarNumeroEnteroFinito(stock_maximo, 'Stock máximo', true, true);
+    if (!validacionStockMaximo.valido) {
+      return res.status(400).json({ error: validacionStockMaximo.mensaje });
+    }
+
     if (stock_maximo != null && Number(stock_maximo) < Number(stock_minimo ?? 0)) {
       return res.status(400).json({ error: 'Stock máximo debe ser >= stock mínimo' });
     }
+
     const result = await pool.query(
       `UPDATE suministros SET nombre=$1, tipo=$2, cantidad=$3, stock_minimo=$4, stock_maximo=$5, codigo=$6, proveedor=$7, fecha_ingreso=$8
        WHERE id=$9 RETURNING *`,
@@ -505,8 +570,10 @@ app.post('/suministros/:id/movimiento', requireAuth, requireRoles('administrador
     if (!tipo_movimiento || !['entrada', 'salida'].includes(tipo_movimiento)) {
       return res.status(400).json({ error: 'Tipo de movimiento inválido' });
     }
-    if (!cantidad || Number(cantidad) <= 0) {
-      return res.status(400).json({ error: 'Cantidad debe ser > 0' });
+
+    const validacionCantidad = validarNumeroEnteroFinito(cantidad, 'Cantidad', false, false);
+    if (!validacionCantidad.valido) {
+      return res.status(400).json({ error: validacionCantidad.mensaje });
     }
 
     await client.query('BEGIN');
@@ -585,6 +652,14 @@ app.post('/mantenimientos', requireAuth, requireRoles('administrador', 'supervis
     if (!impresora_id || !tecnico?.trim() || !fecha || !estado || !descripcion?.trim()) {
       return res.status(400).json({ error: 'Campos obligatorios incompletos' });
     }
+    const validacionImpresora = validarNumeroEnteroFinito(impresora_id, 'Impresora', false, false);
+    if (!validacionImpresora.valido) {
+      return res.status(400).json({ error: validacionImpresora.mensaje });
+    }
+    const existeImpresora = await pool.query('SELECT 1 FROM impresoras WHERE id = $1', [impresora_id]);
+    if (existeImpresora.rows.length === 0) {
+      return res.status(400).json({ error: 'Impresora no existe' });
+    }
     const result = await pool.query(
       `INSERT INTO mantenimientos (impresora_id, tecnico, fecha, estado, descripcion, solucion)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
@@ -592,6 +667,9 @@ app.post('/mantenimientos', requireAuth, requireRoles('administrador', 'supervis
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
+    if (error.code === '23503') {
+      return res.status(400).json({ error: 'Impresora no existe' });
+    }
     console.error('Error creando mantenimiento:', error);
     res.status(500).json({ error: 'Error interno' });
   }
@@ -603,6 +681,14 @@ app.put('/mantenimientos/:id', requireAuth, requireRoles('administrador', 'super
     if (!impresora_id || !tecnico?.trim() || !fecha || !estado || !descripcion?.trim()) {
       return res.status(400).json({ error: 'Campos obligatorios incompletos' });
     }
+    const validacionImpresora = validarNumeroEnteroFinito(impresora_id, 'Impresora', false, false);
+    if (!validacionImpresora.valido) {
+      return res.status(400).json({ error: validacionImpresora.mensaje });
+    }
+    const existeImpresora = await pool.query('SELECT 1 FROM impresoras WHERE id = $1', [impresora_id]);
+    if (existeImpresora.rows.length === 0) {
+      return res.status(400).json({ error: 'Impresora no existe' });
+    }
     const result = await pool.query(
       `UPDATE mantenimientos SET impresora_id=$1, tecnico=$2, fecha=$3, estado=$4, descripcion=$5, solucion=$6
        WHERE id=$7 RETURNING *`,
@@ -613,6 +699,9 @@ app.put('/mantenimientos/:id', requireAuth, requireRoles('administrador', 'super
     }
     res.json(result.rows[0]);
   } catch (error) {
+    if (error.code === '23503') {
+      return res.status(400).json({ error: 'Impresora no existe' });
+    }
     console.error('Error actualizando mantenimiento:', error);
     res.status(500).json({ error: 'Error interno' });
   }
@@ -642,6 +731,25 @@ app.post('/registros', requireAuth, requireRoles('administrador', 'supervisor', 
     if (!impresora_id || !fecha || contador_diario === undefined) {
       return res.status(400).json({ error: 'Impresora, fecha y contador son obligatorios' });
     }
+    const validacionImpresora = validarNumeroEnteroFinito(impresora_id, 'Impresora', false, false);
+    if (!validacionImpresora.valido) {
+      return res.status(400).json({ error: validacionImpresora.mensaje });
+    }
+    const existeImpresora = await pool.query('SELECT 1 FROM impresoras WHERE id = $1', [impresora_id]);
+    if (existeImpresora.rows.length === 0) {
+      return res.status(400).json({ error: 'Impresora no existe' });
+    }
+    const validacionContador = validarNumeroEnteroFinito(contador_diario, 'Contador diario', true, false);
+    if (!validacionContador.valido) {
+      return res.status(400).json({ error: validacionContador.mensaje });
+    }
+    const validacionRecarga = validarNumeroEnteroFinito(recarga_papel, 'Recarga de papel', true, false);
+    if (!validacionRecarga.valido) {
+      return res.status(400).json({ error: validacionRecarga.mensaje });
+    }
+    if (typeof cambio_toner !== 'boolean') {
+      return res.status(400).json({ error: 'Cambio de tóner debe ser verdadero o falso' });
+    }
     const result = await pool.query(
       `INSERT INTO registros_diarios (impresora_id, fecha, contador_diario, recarga_papel, cambio_toner, tecnico_recarga, usuario_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
@@ -651,6 +759,9 @@ app.post('/registros', requireAuth, requireRoles('administrador', 'supervisor', 
   } catch (error) {
     if (error.code === '23505') {
       return res.status(400).json({ error: 'Ya existe un registro para esta impresora en la fecha indicada' });
+    }
+    if (error.code === '23503') {
+      return res.status(400).json({ error: 'Impresora no existe' });
     }
     console.error('Error creando registro:', error);
     res.status(500).json({ error: 'Error interno' });

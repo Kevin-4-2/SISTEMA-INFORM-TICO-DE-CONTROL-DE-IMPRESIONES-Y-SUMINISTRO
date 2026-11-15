@@ -1295,6 +1295,18 @@ async function cargarImpresorasParaSelect(selectId, soloActivas = false) {
   return lista;
 }
 
+// Helper to load active technicians into a <select>
+async function cargarTecnicosParaSelect(selectId, selectedId = null) {
+  const lista = await fetchAPI('/tecnicos');
+  const select = document.getElementById(selectId);
+  if (!select) return lista;
+  const placeholder = select.querySelector('option[value=""]');
+  const placeholderHTML = placeholder ? placeholder.outerHTML : '';
+  select.innerHTML = placeholderHTML + lista.map(t => `<option value="${t.id}">${escaparHTML(t.nombre)} (${escaparHTML(t.usuario)})</option>`).join('');
+  if (selectedId != null) select.value = String(selectedId);
+  return lista;
+}
+
 async function cargarMantenimientos() {
   try {
     const lista = await fetchAPI('/mantenimientos');
@@ -1371,7 +1383,6 @@ async function abrirModalMantenimiento(id) {
         <label for="mant-tecnico">Técnico asignado *</label>
         <select id="mant-tecnico" required>
           <option value="">Selecciona un técnico</option>
-          ${tecnicos.map(t => `<option value="${t.id}">${escaparHTML(t.nombre)} (${escaparHTML(t.usuario)})</option>`).join('')}
         </select>
         ${datos.tecnico && !asignadoDisponible ? `<small>Asignación anterior: ${escaparHTML(datos.tecnico)}. Selecciona un técnico activo para actualizarla.</small>` : ''}
         ${!tecnicos.length ? '<small>No hay técnicos activos. Crea o activa un usuario técnico antes de asignar este mantenimiento.</small>' : ''}
@@ -1404,7 +1415,7 @@ async function abrirModalMantenimiento(id) {
   abrirModal('modal-formulario');
   await cargarImpresorasParaSelect('mant-impresora');
   if (datos.impresora_id) document.getElementById('mant-impresora').value = datos.impresora_id;
-  if (asignadoDisponible) document.getElementById('mant-tecnico').value = String(datos.tecnico_usuario_id);
+  await cargarTecnicosParaSelect('mant-tecnico', datos.tecnico_usuario_id);
 }
 
 async function guardarMantenimiento() {

@@ -1539,6 +1539,27 @@ function periodoSeleccionado() {
   return document.getElementById('reporte-periodo')?.value || new Date().toISOString().slice(0, 7);
 }
 
+function impresoraSeleccionada() {
+  return document.getElementById('reporte-impresora')?.value || '';
+}
+
+// Mantiene el selector de impresora con los equipos del período y conserva la elección.
+function actualizarOpcionesImpresoras(lista) {
+  const select = document.getElementById('reporte-impresora');
+  if (!select) return;
+  const actual = select.value;
+  const nombres = [...new Set(lista.map(r => r.impresora).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'es'));
+  select.innerHTML = '<option value="">Todas las impresoras</option>' +
+    nombres.map(n => `<option value="${escaparHTML(n)}">${escaparHTML(n)}</option>`).join('');
+  select.value = nombres.includes(actual) ? actual : '';
+}
+
+function filtrarPorImpresora(lista) {
+  const seleccion = impresoraSeleccionada();
+  return seleccion ? lista.filter(r => r.impresora === seleccion) : lista;
+}
+
 function recargarReportes() {
   cargarReporteConsumo();
   cargarReporteToner();
@@ -1565,11 +1586,13 @@ function imprimirReporte() {
 async function cargarReporteConsumo() {
   try {
     const lista = await fetchAPI(`/reportes/consumo-mensual?periodo=${encodeURIComponent(periodoSeleccionado())}`);
-    if (!lista.length) {
+    actualizarOpcionesImpresoras(lista);
+    const filtrada = filtrarPorImpresora(lista);
+    if (!filtrada.length) {
       document.getElementById('tabla-reporte-consumo').innerHTML = '<tr><td colspan="4" style="text-align:center"><div class="table-empty"><strong>Sin datos para este período</strong><span>Prueba con otro mes o registra actividad diaria.</span><div class="fleet-empty-actions"><button type="button" class="btn-secundario btn-sm" onclick="recargarReportes()">Reintentar</button></div></div></td></tr>';
       return;
     }
-    document.getElementById('tabla-reporte-consumo').innerHTML = lista.map(r => `
+    document.getElementById('tabla-reporte-consumo').innerHTML = filtrada.map(r => `
       <tr>
         <td>${escaparHTML(r.impresora)}</td>
         <td>${r.papel_total}</td>
@@ -1585,10 +1608,12 @@ async function cargarReporteConsumo() {
 async function cargarReporteToner() {
   try {
     const lista = await fetchAPI(`/reportes/toner?periodo=${encodeURIComponent(periodoSeleccionado())}`);
-    if (!lista.length) {
+    actualizarOpcionesImpresoras(lista);
+    const filtrada = filtrarPorImpresora(lista);
+    if (!filtrada.length) {
       document.getElementById('tabla-reporte-toner').innerHTML = '<tr><td colspan="2" style="text-align:center"><div class="table-empty"><strong>Sin cambios de tóner este mes</strong><span>No se registraron reemplazos en el período.</span></div></td></tr>';
     } else {
-      document.getElementById('tabla-reporte-toner').innerHTML = lista.map(r => `
+      document.getElementById('tabla-reporte-toner').innerHTML = filtrada.map(r => `
         <tr><td>${escaparHTML(r.impresora)}</td><td>${r.cambios_toner}</td></tr>
       `).join('');
     }
@@ -1600,8 +1625,8 @@ async function cargarReporteToner() {
       chartToner = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: lista.map(r => r.impresora),
-          datasets: [{ label: 'Cambios de tóner', data: lista.map(r => r.cambios_toner), backgroundColor: '#8b5cf6' }]
+          labels: filtrada.map(r => r.impresora),
+          datasets: [{ label: 'Cambios de tóner', data: filtrada.map(r => r.cambios_toner), backgroundColor: '#8b5cf6' }]
         },
         options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, animation: { duration: reduceTonerMotion ? 0 : 600, easing: 'easeOutQuart' } }
       });

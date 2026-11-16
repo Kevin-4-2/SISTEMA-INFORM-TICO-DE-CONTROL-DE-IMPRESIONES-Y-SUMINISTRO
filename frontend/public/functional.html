@@ -237,6 +237,10 @@
           <div class="toolbar reportes-acciones">
             <label for="reporte-periodo">Período</label>
             <input type="month" id="reporte-periodo" aria-label="Período de reportes"/>
+            <label for="reporte-impresora">Impresora</label>
+            <select id="reporte-impresora" aria-label="Impresora del reporte" onchange="recargarReportes()">
+              <option value="">Todas las impresoras</option>
+            </select>
             <button class="btn-secundario" type="button" onclick="recargarReportes()">Actualizar</button>
             <button class="btn-secundario" type="button" onclick="exportarReporteExcel()">Exportar Excel</button>
             <button class="btn-principal" type="button" onclick="imprimirReporte()">Guardar PDF</button>

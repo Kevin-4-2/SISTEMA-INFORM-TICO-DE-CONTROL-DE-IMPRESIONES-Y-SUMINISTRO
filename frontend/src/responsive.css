@@ -62,3 +62,72 @@
   #experience .room-header { gap: 8px; }
   #experience .station-viewport { padding-inline: 10px; }
 }
+
+/* --- Correcciones de la revisión visual --- */
+
+/* Mensaje de acceso legible: el texto era de 8 px con opacidad muy baja. */
+#login-feedback {
+  display: inline-block;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  background: rgba(163, 40, 47, 0.82);
+  border-radius: 8px;
+  padding: 4px 10px;
+  opacity: 1 !important;
+  min-height: 20px;
+  max-width: 100%;
+  white-space: normal;
+}
+
+/* El formulario de acceso se salía del ancho en tableta (800 px en 768 px). */
+.login-grid,
+.login-copy,
+.login-panel { min-width: 0; max-width: 100%; }
+
+#login-scene { overflow-x: clip; }
+
+@media (max-width: 900px) {
+  .login-grid { display: grid !important; grid-template-columns: minmax(0, 1fr) !important; }
+  .login-panel { width: 100% !important; max-width: 100% !important; }
+  .login-panel input,
+  .login-panel .field,
+  .login-panel button { width: 100% !important; min-width: 0 !important; }
+}
+
+/* Acciones de tabla siempre visibles: la última columna queda fija al desplazar. */
+@media (max-width: 1120px) {
+  #experience .tabla-wrapper th:last-child,
+  #experience .tabla-wrapper td:last-child,
+  #experience .tabla-wrapper td.acciones {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    background: #ffffff;
+    box-shadow: -10px 0 14px rgba(6, 19, 31, 0.07);
+  }
+  #experience .tabla-wrapper th:last-child {
+    background: #eef5f9;
+  }
+  #experience .tabla-wrapper td.acciones {
+    white-space: nowrap;
+  }
+}
+
+/* El control de movimiento quedaba oculto con la navegación móvil. */
+@media (max-width: 760px) {
+  #experience .control-nav nav { flex: 1 1 auto; width: auto; }
+  #experience .control-nav .nav-footer {
+    display: flex !important;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 0 2px;
+  }
+  #experience .control-nav .nav-footer button {
+    width: 40px;
+    height: 40px;
+  }
+}
